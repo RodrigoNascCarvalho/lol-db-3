@@ -99,65 +99,18 @@ int verifica_primo(int num);
 
 int prox_primo(int num);
 
-/* Função de swap generica */
-void swap (void *a, void *b, size_t size);
-
-/*
-	http://www.cs.fsu.edu/~lacher/courses/COP4531/lectures/sorts/slide09.html
-	O qsort padrão da linguagem C estava dando função restrita no Online Judge nos casos 9 e 10.
-	Por este motivo implementei uma versão genérica do Cormen Quicksort para este projeto.
- */
-void quick_sort (void *ptr, int begin, int end, size_t size, int (*compare)(const void*, const void*));
-
-/* Particionamento e escolha do pivot */
-int partition (void *ptr, int begin, int end, size_t size, int (*compare)(const void*, const void*));
-/* Comparadores utilizados para qsorts e buscas binárias */
-
-/* Compara chaves primárias de um elemento de indice primario */
-int compareKeys (const void *a, const void *b);
-
-/*
-	Comparadores para vencedor.
-	Anteriormente utilizava de comparadores separados para ordenar o índice.
-	Provavelmente funcionava porque o qsort do C tem implementação estável (não compara elementos iguais)
-	Comparador compareWinnerKeysNames pra comparar os dois ao mesmo tempo é necessário
-	para a implementação do Cormen Quicksort
-*/
-int compareWinner (const void *a, const void *b);
-
-int compareWinnerKeysNames (const void *a, const void *b);
-
-/*
-	Comparadores para mvp.
-	Anteriormente utilizava de comparadores separados para ordenar o índice.
-	Provavelmente funcionava porque o qsort do C tem implementação estável (não compara elementos iguais)
-	Comparador compareWinnerKeysNames pra comparar os dois ao mesmo tempo é necessário
-	para a implementação do Cormen Quicksort
-*/
-int compareMVPKeysNames (const void *a, const void *b);
-
-int compareMVP (const void *a, const void *b);
-
-/* Comparador de ints */
-int compareInt (const void *a, const void*b);
-
-int binarySearch (void* array, void* key, int start, int end, size_t size, int (*compare)(const void*, const void*));
-
 /* Recebe do usuário uma string simulando o arquivo completo e retorna o número
  * de registros. */
 int carregar_arquivo();
-
-/* Getchar */
-void ignore();
 
 /* Exibe o jogador */
 void exibir_registro(int rrn);
 
 /* Cria o índice primário */
-void criar_tabela(Tabela tabela, int tam);
+void criar_tabela(Hashtable *tabela, int tam);
 
 /* Cadastra um element novo no indice e no arquivo */
-void cadastrar(Iprimary *iprimary, Iwinner *iwinner, Imvp *imvp, int* nregistros);
+void cadastrar(Hashtable *tabela);
 
 /* Scaneia o score de um time */
 void scanScore (char *score);
@@ -190,20 +143,23 @@ void readMatch (Partida *element);
 void scanMatchDuration (char* element);
 
 /* Altera um registro existente apenas data */
-void alterar(Iprimary iprimary);
+void alterar(Hashtable tabela);
 
 /* Busca um elemento */
-void buscar(Iprimary iprimary, Iwinner *iwinner, Imvp *imvp, int nregistros);
+void buscar(Hashtable tabela);
 
-/* Lista elementos por chave primária, vencedor e mvp */
-void listar(Iprimary iprimary, Iwinner *iwinner, Imvp *imvp, int nregistros);
+void busca_tabela (Hashtable tabela, Chave element, int *pos);
 
-/* Libera memória da árvore */
-void apagar_no(node_Btree **x);
+void imprimir_tabela (Hashtable tabela);
+
+void remover (Hashtable *tabela);
 
 /* Recupera um registro através do seu rrn */
 Partida recuperar_registro (int rrn);
 
+void hash (Chave chave, int tam);
+
+void insere (Hashtable *tabela, Chave chave);
 
 /* ==========================================================================
  * ============================ FUNÇÃO PRINCIPAL ============================
@@ -330,43 +286,6 @@ int prox_primo(int num) {
 }
 
 
-
-/*
-	Compares primary keys from the primaryIndex.
-*/
-int compareKeys (const void *a, const void *b) {
-	const Chave *primary_a = (Chave*) a;
-	const Chave *primary_b = (Chave*) b;
-	return strcmp (primary_a->pk, primary_b->pk);
-}
-
-
-/*
-	Generic binary search function, based on the prototype of the qsort stantard C function. 
-	Instead of dereferencing the pointer, the values are always found by iterating on the pointer's address by adding
-	the size of the structure sent to the function, because void pointers cannot be dereferenced.
-	The comparison between key and array always needs to be defined as a separate function and be sent to the binary
-	search function, this allows us to avoid recreating this function if we want to make comparisons between the 
-	different structures we have in this project.
-*/
-int binarySearch (void* array, void* key, int start, int end, size_t size, int (*compare)(const void*, const void*)) {
-	int middle;
-	void *middleElement;
-	if (end < start) { 
-		return -1;
-	} else {
-		middle = start + ((end - start)/2);
-		middleElement = array + middle * size;
-		if ((*compare)(middleElement, key) < 0) { 
-			return binarySearch (array, key, middle + 1, end, size, compare);
-		} else if ((*compare)(middleElement, key) > 0) { 
-			return binarySearch (array, key, start, middle - 1, size, compare);
-		} else { 
-			return middle;
-		}
-	}
-}
-
 /* Recebe do usuário uma string simulando o arquivo completo e retorna o número
  * de registros. */
 int carregar_arquivo() {
@@ -392,44 +311,52 @@ void exibir_registro(int rrn) {
 }
 
 
-void criar_tabela(Iprimary *iprimary, int nregistros, int ordem) {
+void criar_tabela(Hashtable *tabela, int tam) {
 	int i;
-	char *seek;
-	Chave elementoPrimario;
-	M = ordem;
 
-	iprimary->raiz = NULL;
+	tabela->tam = tam;
+	tabela->v = (Chave) malloc(sizeof(Chave) * tabela->tam);
 
-	// Para todos os registros, escanear a chave primaria
-	// Calcular rrn e inserir na arvore
-	for (i = 0; i < nregistros; i += 1) {
-		seek = ARQUIVO + (TAM_REGISTRO * i);
-
-		sscanf (seek, "%[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@", 
-				elementoPrimario.pk);
-
-		elementoPrimario.rrn = TAM_REGISTRO * i;
-
-		iprimary->raiz = insere (iprimary->raiz, elementoPrimario);
+	for (i = 0; i < tam; i += 1) {
+		tabela->v[i].estado = LIVRE;
 	}
 }
 
-void cadastrar(Iprimary *iprimary, Iwinner *iwinner, Imvp *imvp, int* nregistros){
+void carregar_tabela(Hashtable *tabela) {
+	int i = 0;
+	Chave chave;
+	// Para todos os registros, escanear a chave primaria
+	// Calcular rrn e inserir na arvore
+	while (TRUE) {
+		seek = ARQUIVO + (TAM_REGISTRO * i);
+
+		if (sscanf (seek, "%[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@", 
+				chave.pk) != 1) {
+			break;
+		}
+
+		chave.rrn = TAM_REGISTRO * i;
+		chave.estado = OCUPADO;
+
+		insere (tabela, chave);
+	}
+}
+
+void cadastrar(Hashtable *tabela){
 	Partida match;
 	int i;
 	Chave chave;
-	node_Btree* pagina;
 	char reg_match[TAM_REGISTRO];
 	char *seek;
+	int rrn, pos = 0;
 
 	readMatch (&match);
 	strcpy (chave.pk, match.pk);
-	if (iprimary->raiz != NULL) {
-		pagina = busca_pagina (iprimary->raiz, chave, FALSE);	
-	}
+
+	rrn = busca_tabela (tabela, chave, &pos);	
 
 	// Se não encontramos pagina, então podemos cadastrar um novo elemento, senão erro
-	if (pagina != NULL) {
+	if (rrn != -1) {
 		printf (ERRO_PK_REPETIDA, match.pk);
 	} else {
 		// Lemos todos os valores da partida e escrevemos no buffer reg_match
@@ -444,29 +371,16 @@ void cadastrar(Iprimary *iprimary, Iwinner *iwinner, Imvp *imvp, int* nregistros
 		}
 
 		// Vamos para o RRN do  elemento correto (fim do 'arquivo')
-		seek = ARQUIVO + (*nregistros * TAM_REGISTRO);
+		seek = ARQUIVO + (strlen(ARQUIVO)/TAM_REGISTRO);
 
 		// E copiamos o reg_match para a posição desejada
 		strncpy (seek, reg_match, TAM_REGISTRO);
 
 		// Inserimos no indice primario (Arvore B)
-		chave.rrn = (*nregistros * TAM_REGISTRO);
-		iprimary->raiz = insere (iprimary->raiz, chave);
+		chave.rrn = (strlen(ARQUIVO)/TAM_REGISTRO);
+		chave.estado = OCUPADO;
 
-		// Copiamos os valoes para as listas do indices secundarios
-		strcpy (iwinner[*nregistros].pk, match.pk);
-		strcpy (iwinner[*nregistros].vencedor, match.vencedor);
-
-		strcpy (imvp[*nregistros].pk, match.pk);
-		strcpy (imvp[*nregistros].mvp, match.mvp);
-
-		// Atualizamos o no de registros
-		*nregistros += 1;
-
-		// Ordenamos os indices secundarios novamente.
-		quick_sort (iwinner, 0, *nregistros, sizeof(Iwinner), compareWinnerKeysNames);
-
-		quick_sort (imvp, 0, *nregistros, sizeof(Imvp), compareMVPKeysNames);
+		insere (tabela, chave);
 	}
 }
 
@@ -657,35 +571,119 @@ void readMatch (Partida *element) {
 	createPrimaryKey (element);
 }
 
-void alterar(Iprimary iprimary) {
-	char search[9], matchDuration[6], dummy[TAM_REGISTRO];
-	int primaryPosition, str_size;
-	Chave element;
+void update (int rrn) {
+	int str_size;
+	char matchDuration[6], dummy[TAM_REGISTRO];
 	Partida match;
-	node_Btree* pagina;
 	char* seek;
+
+	// escaneamos duração de partida
+	scanMatchDuration (matchDuration);
+
+	//Atualizamos com os novos valores no arquivo.
+	seek = ARQUIVO + rrn;
+	sscanf (seek, "%[^@]@%[^@]@%[^@]@%[^@]@%[^@]@%[^@]@%[^@]@%[^@]@%[^@]@", 
+		match.pk, match.equipe_azul, match.equipe_vermelha, match.data_partida,
+		match.duracao, match.vencedor, match.placar1,
+		match.placar2, match.mvp);
+
+	strcpy (match.duracao, matchDuration);
+
+	str_size = sprintf (dummy, "%s@%s@%s@%s@%s@%s@%s@%s@%s@", 
+		match.pk, match.equipe_azul, match.equipe_vermelha, match.data_partida,
+		match.duracao, match.vencedor, match.placar1,
+		match.placar2, match.mvp);
+
+	strncpy (seek, dummy, str_size);
+}
+
+void alterar(Hashtable tabela) {
+	char search[20];
+	Chave element;
+	int rrn, pos = 0;
 
 	scanf("%[^\n]", search);
 	strcpy (element.pk, search);
+	
+	rrn = busca_tabela (tabela, element, &pos);	
 
-	pagina = busca_pagina (iprimary.raiz, element, FALSE);
+	if (rrn == -1) {
+		printf(REGISTRO_N_ENCONTRADO);
+	} else {
+		update (rrn);
+	}
+}
 
-	// se a pagina existe podemos alterar
-	if (pagina != NULL) {
-		// escaneamos duração de partida
-		scanMatchDuration (matchDuration);
+void busca_tabela(Hashtable tabela, Chave element, int *pos) {
+	int hashPos, colisionPos, colisoes = 0;
+	hashPos = hash (element, tabela.tam); 
 
-		//buscamos a posicao dentro da pagina
-		primaryPosition = binarySearch (pagina->chave, &element, 0, pagina->num_chaves - 1, sizeof (Chave), compareKeys);
-		
-		//Atualizamos com os novos valores no arquivo.
-		seek = ARQUIVO + pagina->chave[primaryPosition].rrn;
+	if (tabela.v[hashPos].estado == LIVRE || tabela.v[hashPos].estado == REMOVIDO) {
+		return -1;
+	} else  if (tabela.v[hashPos].estado == OCUPADO && strcmp (tabela.v[hashPos].pk, element.pk) == 0){
+		*pos = hashPos;
+		return tabela.v[hashPos].rrn;
+	} else {
+		colisoes += 1;
+		colisionPos = (hashPos + colisoes) % tabela->tam;
+		while (colisionPos != hashPos) {
+			if (strcmp (tabela->v[colisionPos].pk, element.pk) == 0) {
+				break;
+			}
+
+			colisoes += 1;
+			colisionPos = (hashPos + colisoes) % tabela->tam;
+		}
+		if (colisionPos % tabela->tam == hashPos) {
+			return -1;
+		} else {
+			*pos = colisionPos;
+			return tabela.v[colisionPos].rrn;
+		}
+	}
+}
+
+void buscar(Hashtable tabela) {
+	char menuOption;
+	char search[20];
+	Chave element;
+	int rrn, pos = 0;
+
+	scanf ("%[^\n]", search);
+	strcpy (element.pk, search);
+	
+	rrn = busca_tabela (tabela, element, &pos);
+
+	if (rrn == -1) {
+		printf(REGISTRO_N_ENCONTRADO);
+	} else {
+		exibir_registro (rrn);
+	}
+}
+
+void remover (Hashtable *tabela) {
+	Chave element;
+	Partida match;
+	char* seek;
+	char dummy[TAM_REGISTRO];
+	int rrn, str_size, pos = 0;
+
+	getchar();
+	scanf ("%[^\n]", element.pk);
+
+
+	rrn = busca_tabela (tabela, element, &pos);
+
+	if (rrn != -1) {
+		seek = ARQUIVO + rrn;
+
 		sscanf (seek, "%[^@]@%[^@]@%[^@]@%[^@]@%[^@]@%[^@]@%[^@]@%[^@]@%[^@]@", 
 			match.pk, match.equipe_azul, match.equipe_vermelha, match.data_partida,
 			match.duracao, match.vencedor, match.placar1,
 			match.placar2, match.mvp);
 
-		strcpy (match.duracao, matchDuration);
+		match.pk[0] = '*';
+		match.pk[1] = '|';
 
 		str_size = sprintf (dummy, "%s@%s@%s@%s@%s@%s@%s@%s@%s@", 
 			match.pk, match.equipe_azul, match.equipe_vermelha, match.data_partida,
@@ -693,65 +691,32 @@ void alterar(Iprimary iprimary) {
 			match.placar2, match.mvp);
 
 		strncpy (seek, dummy, str_size);
+
+		tabela.v[pos].estado = REMOVIDO;
 	} else {
 		printf (REGISTRO_N_ENCONTRADO);
 	}
-
 }
 
-void buscar(Iprimary iprimary, Iwinner *iwinner, Imvp *imvp, int nregistros) {
-	char menuOption;
-	char search[40];
-	Chave pElement;
-	Iwinner wElement;
-	Imvp mElement;
-	/*printListOptions();*/
-	getchar();
-	scanf("%c\n", &menuOption);
-	switch(menuOption) { 
-		case '1':
-			scanf ("%[^\n]", search);
-			strcpy (pElement.pk, search);
-			printf (NOS_PERCORRIDOS, search);
-			busca_resultados (iprimary, pElement, TRUE);
-			break;
-		case '2':
-			scanf("%[^\n]", search);
-			strcpy (wElement.vencedor, search);
-			searchMatchesOrderByWinner (iwinner, iprimary, wElement, nregistros);
-			break;
-		case '3':
-			scanf("%[^\n]", search);
-			strcpy (mElement.mvp, search);
-			searchMatchesOrderByMVP (imvp, iprimary, mElement, nregistros);
-			break;
-		default:
-			break;
+void imprimir_tabela (Hashtable tabela) {
+	int i;
+	for (i = 0; i < tabela.tam; i++) {
+		if (tabela.v[i].estado == LIVRE) {
+			printf(POS_LIVRE, i);
+		}
+		else if (tabela.v[i].estado == OCUPADO) {
+			printf(POS_OCUPADA, i, tabela.v[i].pk);
+		}
+		else if (tabela.v[i].estado == REMOVIDO) {
+			printf(POS_REMOVIDA, i);
+		}
 	}
 }
 
-
-void listar(Iprimary iprimary, Iwinner *iwinner, Imvp *imvp, int nregistros) {
-	char menuOption;
-	getchar();
-	scanf(" %c", &menuOption);
-
-	switch(menuOption) { 
-		case '1':
-			imprimeArvoreB (iprimary.raiz, 1);
-			printf("\n");
-			break;
-		case '2':
-			printMatchesOrderByWinner (iwinner, iprimary, nregistros);
-			break;
-		case '3':
-			printMatchesOrderByMVP (imvp, iprimary, nregistros);
-			break;
-		default:
-			ignore();
-			break;
-	}
+void liberar_tabela (Hashtable tabela) {
+	free (tabela.v);
 }
+
 
 Partida recuperar_registro (int rrn) {
 	Partida match;
@@ -764,3 +729,44 @@ Partida recuperar_registro (int rrn) {
 			match.placar2, match.mvp);
 	return match;
 }
+
+int hash (Chave chave, int tam) {
+	int i, result, sum = 0;
+	for (i = 0; i < 8; i += 1) {
+		sum += (i + 1) * chave.pk[i];
+	}
+	return sum % tam;
+}
+
+void insere (Hashtable *tabela, Chave chave) {
+	Chave temp;
+	int hashPos, colisoes = 0;
+	int colisionPos;
+
+	hashPos = hash (chave, tabela->tam);
+
+	if (tabela->v[hashPos].estado == LIVRE) {
+		tabela->v[hashPos] = chave;
+		printf (REGISTRO_INSERIDO, chave.pk, colisoes);
+	} else {
+		if (strcmp (tabela->v[hashPos].pk, chave.pk) == 0) {
+			printf (ERRO_PK_REPETIDA, chave.pk);
+		} else {
+			colisoes += 1;
+			colisionPos = (hashPos + colisoes) % tabela->tam;
+			while (colisionPos != hashPos) {
+				if (tabela->v[colisionPos].estado == LIVRE) {
+					tabela->v[colisionPos] = chave;
+					printf (REGISTRO_INSERIDO, chave.pk, colisoes);
+					break;
+				}
+
+				colisoes += 1;
+				colisionPos = (hashPos + colisoes) % tabela->tam;
+			}
+			if (colisionPos % tabela->tam == hashPos) {
+				printf (ERRO_TABELA_CHEIA);
+			}		
+		}
+	}
+ }
