@@ -81,74 +81,22 @@ void carregar_arquivo();
 void exibir_registro(int rrn);
 
 /* <<< DECLARE AQUI OS PROTOTIPOS >>> */
-/* Função de swap generica */
-void swap (void *a, void *b, size_t size);
+void carregar_tabela(Hashtable *tabela);
 
-/*
-	http://www.cs.fsu.edu/~lacher/courses/COP4531/lectures/sorts/slide09.html
-	O qsort padrão da linguagem C estava dando função restrita no Online Judge nos casos 9 e 10.
-	Por este motivo implementei uma versão genérica do Cormen Quicksort para este projeto.
- */
-void quick_sort (void *ptr, int begin, int end, size_t size, int (*compare)(const void*, const void*));
+void liberar_tabela (Hashtable *tabela);
 
-/* Particionamento e escolha do pivot */
-int partition (void *ptr, int begin, int end, size_t size, int (*compare)(const void*, const void*));
-/* Comparadores utilizados para qsorts e buscas binárias */
+int verifica_primo(int num);
 
-/* Compara chaves primárias de um elemento de indice primario */
-int compareKeys (const void *a, const void *b);
-
-/*
-	Comparadores para vencedor.
-	Anteriormente utilizava de comparadores separados para ordenar o índice.
-	Provavelmente funcionava porque o qsort do C tem implementação estável (não compara elementos iguais)
-	Comparador compareWinnerKeysNames pra comparar os dois ao mesmo tempo é necessário
-	para a implementação do Cormen Quicksort
-*/
-int compareWinner (const void *a, const void *b);
-
-int compareWinnerKeysNames (const void *a, const void *b);
-
-/*
-	Comparadores para mvp.
-	Anteriormente utilizava de comparadores separados para ordenar o índice.
-	Provavelmente funcionava porque o qsort do C tem implementação estável (não compara elementos iguais)
-	Comparador compareWinnerKeysNames pra comparar os dois ao mesmo tempo é necessário
-	para a implementação do Cormen Quicksort
-*/
-int compareMVPKeysNames (const void *a, const void *b);
-
-int compareMVP (const void *a, const void *b);
-
-/* Comparador de ints */
-int compareInt (const void *a, const void*b);
-
-/* Funções de busca binária */
-int binarySearchAll (void* array, void* key, int start, int end, int *result, size_t size, int (*compare)(const void*, const void*));
-
-int binarySearch (void* array, void* key, int start, int end, size_t size, int (*compare)(const void*, const void*));
-
-/* Recebe do usuário uma string simulando o arquivo completo e retorna o número
- * de registros. */
-int carregar_arquivo();
-
-/* Getchar */
-void ignore();
+int prox_primo(int num);
 
 /* Exibe o jogador */
 void exibir_registro(int rrn);
 
 /* Cria o índice primário */
-void criar_iprimary(Iprimary *iprimary, int nregistros, int ordem);
-
-/* Cria o índice secundário de vencedores */
-void criar_iwinner(Iwinner *iwinner, int nregistros);
-
-/* Cria o índice secundário de MVPs */
-void criar_imvp(Imvp *imvp, int nregistros);
+void criar_tabela(Hashtable *tabela, int tam);
 
 /* Cadastra um element novo no indice e no arquivo */
-void cadastrar(Iprimary *iprimary, Iwinner *iwinner, Imvp *imvp, int* nregistros);
+void cadastrar(Hashtable *tabela);
 
 /* Scaneia o score de um time */
 void scanScore (char *score);
@@ -181,54 +129,23 @@ void readMatch (Partida *element);
 void scanMatchDuration (char* element);
 
 /* Altera um registro existente apenas data */
-void alterar(Iprimary iprimary);
+void alterar(Hashtable tabela);
 
 /* Busca um elemento */
-void buscar(Iprimary iprimary, Iwinner *iwinner, Imvp *imvp, int nregistros);
+void buscar(Hashtable tabela);
 
-/* Busca uma pagina com resultado esperado */
-void busca_resultados(Iprimary iprimary, Chave chave, int imprimaAdicional);
+int busca_tabela (Hashtable tabela, Chave element);
 
-/* Busca na ultima pagina antes de procurar novamente */
-void busca_ultimaPagina (Iprimary iprimary, Chave chave);
+void imprimir_tabela (Hashtable tabela);
 
-/* Busca partidas ordenadas por vencedor */
-void searchMatchesOrderByWinner (Iwinner *iwinner, Iprimary iprimary, Iwinner element, int size);
-
-/* Busca partidas ordenadas por MVP */
-void searchMatchesOrderByMVP (Imvp *imvp, Iprimary iprimary, Imvp element, int size);
-
-/* Lista elementos por chave primária, vencedor e mvp */
-void listar(Iprimary iprimary, Iwinner *iwinner, Imvp *imvp, int nregistros);
-
-/* Libera memória da árvore */
-void apagar_no(node_Btree **x);
+void remover (Hashtable *tabela);
 
 /* Recupera um registro através do seu rrn */
 Partida recuperar_registro (int rrn);
 
-/* Imprime partidas ordenadas por vencedor */
-void printMatchesOrderByWinner (Iwinner *iwinner, Iprimary iprimary, int nregistros);
+int hash (Chave chave, int tam);
 
-/* Imprime partidas ordenadas por mvp */
-void printMatchesOrderByMVP (Imvp *imvp, Iprimary iprimary, int nregistros);
-
-
-/* FUNÇÕES DE ÁRVORE B */
-/* Busca a página da árvore b utilizando uma Chave */
-node_Btree* busca_pagina(node_Btree* x, Chave key, int imprimirRota);
-
-/* Realiza a operação de split no nó atual quando necessário */
-node_Btree* divide_no(node_Btree* x, Chave key, node_Btree* filho_direito, Chave* chave_promovida);
-
-/* Encontra nó-folha correto para inserção e tratar overflow */
-node_Btree* insere_aux (node_Btree* x, Chave key, Chave* chave_promovida);
-
-/* Função geral de inserção, utiliza as outras acima */
-node_Btree* insere (node_Btree *root, Chave key);
-
-/* Função que cria um nó limpo */
-node_Btree* cria_no ();
+void insere (Hashtable *tabela, Chave chave, int imprimeTabela);
 
 
 /* ==========================================================================
@@ -331,513 +248,80 @@ void exibir_registro(int rrn) {
 
 
 /* <<< IMPLEMENTE AQUI AS FUNCOES >>> */
-void swap (void *a, void *b, size_t size) {
-	void *temp = malloc(size);
-
-	/* Para void pointer, memmove foi uma solução encontrada pro swap */
-	memmove (temp, b, size);
-	memmove (b, a, size);
-	memmove (a, temp, size);
-
-	free (temp);
-	temp = NULL;
-}
-
-/* Cormen Quicksort */
-void quick_sort (void *ptr, int begin, int end, size_t size, int (*compare)(const void*, const void*)) {
-	int pivot;
-	if (begin < end) {
-		/* Encontra pivot */
-		pivot = partition (ptr, begin, end, size, compare);
-		/* Divide pra conquistar */
-		quick_sort (ptr, begin, pivot, size, compare);
-		quick_sort (ptr, pivot + 1, end, size, compare);
-	}
-}
-
-
-int partition (void *ptr, int begin, int end, size_t size, int (*compare)(const void*, const void*)) {
-	int i, j;
-
-	i = begin;
-	for (j = begin; j < end - 1; ++j) {
-		// Comparador externo
-		if ((*compare)(ptr + j * size, ptr + (end - 1) * size) <= 0) {
-			// Passagem de vetor por endereço usando *void
-			swap (ptr + i * size, ptr + j * size, size);
-			++i;
-		}
-	}
-	// Passagem de vetor por endereço usando *void
-	swap (ptr + i * size, ptr + (end - 1) * size, size);
-	return i;
-}
-
-/*
-	Compares just Imvp mvpNicknames.
-*/
-int compareMVP (const void *a, const void *b) {
-	const Imvp *mvp_a = (Imvp*) a;
-	const Imvp *mvp_b = (Imvp*) b;
-	return strcmp (mvp_a->mvp, mvp_b->mvp);
-}
-
-/* Comparação conjunta para o MVP */
-int compareMVPKeysNames (const void *a, const void *b) {
-	const Imvp *mvp_a = (Imvp*) a;
-	const Imvp *mvp_b = (Imvp*) b;
-	int cmp = strcmp (mvp_a->mvp, mvp_b->mvp);
-	if(cmp == 0){
-		return strcmp (mvp_a->pk, mvp_b->pk);
-	}
-	return cmp;
-}
-
-/*
-	Compares just Iwinner winners.
-*/
-int compareWinner (const void *a, const void *b) {
-	const Iwinner *winner_a = (Iwinner*) a;
-	const Iwinner *winner_b = (Iwinner*) b;
-	return strcmp (winner_a->vencedor, winner_b->vencedor);
-}
-
-int compareWinnerKeysNames (const void *a, const void *b) {
-	const Iwinner *winner_a = (Iwinner*) a;
-	const Iwinner *winner_b = (Iwinner*) b;
-	int cmp = strcmp (winner_a->vencedor, winner_b->vencedor);
-	if(cmp == 0){
-		return strcmp (winner_a->pk, winner_b->pk);
-	}
-	return cmp;
-}
-
-/*
-	Compares primary keys from the primaryIndex.
-*/
-int compareKeys (const void *a, const void *b) {
-	const Chave *primary_a = (Chave*) a;
-	const Chave *primary_b = (Chave*) b;
-	return strcmp (primary_a->pk, primary_b->pk);
-}
-
-/*
-	Compare Ints
-*/
-int compareInt (const void *a, const void*b) {
-	const int *n_a = (int*) a;
-	const int *n_b = (int*) b;
-	return *n_a - *n_b;
-}
-
-/*
-	Generic binary search function that returns all key ocurrences.
-	After finding the key, it searches the other key ocurrences to the right and left of the array.
-*/
-int binarySearchAll (void* array, void* key, int start, int end, int *result, size_t size, int (*compare)(const void*, const void*)) {
-	int middle;
-	int tempMiddle;
-	int i = 0;
-	void *middleElement;
-	void *nextElement;
-	void *prevElement;
-	if (end < start) { 
-		return -1;
-	} else {
-		middle = start + ((end - start)/2);
-		middleElement = array + middle * size;
-		if ((*compare)(middleElement, key) < 0) { 
-			return binarySearchAll (array, key, middle + 1, end, result, size, compare);
-		} else if ((*compare)(middleElement, key) > 0) { 
-			return binarySearchAll (array, key, start, middle - 1, result, size, compare);
-		} else {
-			result[i] = middle;
-			nextElement = middleElement + size;
-			prevElement = middleElement - size;
-			tempMiddle = middle;
-			while ((*compare)(nextElement, key) == 0) {
-				i += 1;
-				tempMiddle += 1;
-				nextElement = nextElement + size;
-				result[i] = tempMiddle; 
-			}
-			tempMiddle = middle;
-			while ((*compare)(prevElement, key) == 0) {
-				i += 1;
-				tempMiddle -= 1;
-				prevElement = prevElement - size;
-				result[i] = tempMiddle;
-			}
-			return i + 1;
-		}
-	}
-}
-
-/*
-	Generic binary search function, based on the prototype of the qsort stantard C function. 
-	Instead of dereferencing the pointer, the values are always found by iterating on the pointer's address by adding
-	the size of the structure sent to the function, because void pointers cannot be dereferenced.
-	The comparison between key and array always needs to be defined as a separate function and be sent to the binary
-	search function, this allows us to avoid recreating this function if we want to make comparisons between the 
-	different structures we have in this project.
-*/
-int binarySearch (void* array, void* key, int start, int end, size_t size, int (*compare)(const void*, const void*)) {
-	int middle;
-	void *middleElement;
-	if (end < start) { 
-		return -1;
-	} else {
-		middle = start + ((end - start)/2);
-		middleElement = array + middle * size;
-		if ((*compare)(middleElement, key) < 0) { 
-			return binarySearch (array, key, middle + 1, end, size, compare);
-		} else if ((*compare)(middleElement, key) > 0) { 
-			return binarySearch (array, key, start, middle - 1, size, compare);
-		} else { 
-			return middle;
-		}
-	}
-}
-
-/* Recebe do usuário uma string simulando o arquivo completo e retorna o número
- * de registros. */
-int carregar_arquivo() {
-	scanf("%[^\n]\n", ARQUIVO);
-	return strlen(ARQUIVO) / TAM_REGISTRO;
-}
-
-/* Exibe a partida */
-void exibir_registro(int rrn) {
-
-	Partida j = recuperar_registro(rrn);
-
-	printf("%s\n", j.pk);
-	printf("%s\n", j.equipe_azul);
-	printf("%s\n", j.equipe_vermelha);
-	printf("%s\n", j.data_partida);
-	printf("%s\n", j.duracao);
-	printf("%s\n", j.vencedor);
-	printf("%s\n", j.placar1);
-	printf("%s\n", j.placar2);
-	printf("%s\n", j.mvp);
-	printf("\n");
-}
-
-void ignore() {
-	char c;
-   	while ((c = getchar()) != '\n' && c != EOF);
-}
-
-void imprimeArvoreB (node_Btree *x, int nivel) {
-	int i = 0;
-
-	// Se o nó não é vazio
-	if (x != NULL) {
-		printf ("%d - ", nivel);
-		/* Então imprima as chaves daquele do nó atual*/
-		while (i < x->num_chaves){
-			printf ("%s", x->chave[i].pk);
-			i += 1;
-			if (i < x->num_chaves) {
-				printf (", ");
-			}
-		}
-		printf ("\n");
-	}
-	
-	// Se o nó é nulo, acabou, senão imprima todos os nós filhos do nó atual.
-	if (x == NULL) {
-		return;
-	} else {
-		for (i = 0; i < x->num_chaves + 1; i++) {
-			imprimeArvoreB (x->desc[i], nivel + 1);	
-		}
-	}
-}
-
-node_Btree* busca_pagina (node_Btree* x, Chave key, int imprimirRota) {
-	int i = 0;
-	int j;
-
-	// Se imprimirRota é true, imprima os todas as chaves do nó atual.
-	if (imprimirRota) {
-		for (j = 0; j < x->num_chaves; j++) {
-			if (j == x->num_chaves - 1) {
-				printf ("%s\n", x->chave[j].pk);
-			} else {
-				printf ("%s, ", x->chave[j].pk);
-			}
-		}
-	}
-
-	// Procura a posição de i em que a chave deverá estar 
-	while (i < x->num_chaves && strcmp (key.pk, x->chave[i].pk) > 0) {
-		i += 1;
-	}
-
-	// Se a posição que encontramos contém a chave procurada, retorne o nó
-	if (i < x->num_chaves && strcmp (key.pk, x->chave[i].pk) == 0) {
-		return x;
-	}
-
-	//Senão, se é folha, não achamos, caso contrário buscamos nos filhos
-	if (x->folha) {
-		return NULL;
-	} else {
-		return busca_pagina (x->desc[i], key, imprimirRota);
-	}
-}
-
-/* Divisão de nó */
-node_Btree* divide_no (node_Btree* x, Chave key, 
-	node_Btree* filho_direito, Chave *chave_promovida) {
-	int i, j, chave_alocada;
-	node_Btree* y;
-
-	// divine nó criando um novo nó y e setando o nuemro de suas chaves para a metade de x
-	i = x->num_chaves - 1;
-	chave_alocada = FALSE;
-
-	y = cria_no();
-	y->folha = x->folha;
-
-	y->num_chaves = ((M - 1)/2);
-	
-	/* Coloca os valores no y, verficando se a nova chave estará em y ou x */
-	for (j = y->num_chaves - 1; j >= 0; j--){
-		if (!chave_alocada && strcmp (key.pk, x->chave[i].pk) > 0) {
-			y->chave[j] = key;
-			y->desc[j+1] = filho_direito;
-			chave_alocada = TRUE;
-		} else {
-			y->chave[j] = x->chave[i];
-			y->desc[j+1] = x->desc[i+1];
-			i -= 1;
-		}
-	}
-
-	// se chave não foi alocada em y, aloque em x
-	if (!chave_alocada) {
-		while (i >= 0 && strcmp (key.pk, x->chave[i].pk) < 0) {
-			x->chave[i+1] = x->chave[i];
-			x->desc[i+2] = x->desc[i+1];
-			i -= 1;
-		}
-		x->chave[i+1] = key;
-		x->desc[i+2] = filho_direito;
-	}
-
-	// chave promovida e setar descendentes e num chaves de x corretamente.
-	*chave_promovida = x->chave[(M / 2)];
-	y->desc[0] = x->desc[((M / 2) + 1)];
-	x->num_chaves = M / 2;
-
-	return y; 
-}
-
-node_Btree* insere_aux (node_Btree* x, Chave key, Chave* chave_promovida) {
-	int i;
-	node_Btree* filho_direito = NULL;
-
-	//Se nó for folha
-	if (x->folha) {
-		// E está dentro da definição de arvore b
-		if (x->num_chaves < (M - 1)) {
-			// Ache a posição para inserir a nova chave, movendo as antigas para uma posição a frente
-			i = x->num_chaves - 1;
-			while (i >= 0 && strcmp (key.pk, x->chave[i].pk) < 0) {
-				x->chave[i+1] = x->chave[i];
-				i -= 1;	
-			}
-			// Insira chave, nenhuma chave foi promovida
-			x->chave[i+1] = key;
-			x->num_chaves += 1;
-
-			*chave_promovida = snull;
-			return NULL;
-		} else {
-			// Senão temos que fazer split
-			return divide_no (x, key, filho_direito, chave_promovida);
-		} 
-	} else {
-		// Se não é folha, temos que achar o filho pra procurar para inserir a chave
-		i = x->num_chaves - 1;
-
-		while (i >= 0 && strcmp (key.pk, x->chave[i].pk) < 0) {
-			i -= 1;
-		}
-		i += 1;
-
-		// inserir no filho
-		filho_direito = insere_aux (x->desc[i], key, chave_promovida);
-
-		// se houve promoção, temos que refletir isso em todos os nós, até os pais, caso estes necessitem de split
-		if (chave_promovida->rrn != snull.rrn) {
-			key = *chave_promovida;
-
-			if (x->num_chaves < (M - 1)) {
-				i = x->num_chaves - 1;
-				while (i >= 0 && strcmp (key.pk, x->chave[i].pk) < 0) {
-					x->chave[i+1] = x->chave[i];
-					x->desc[i+2] = x->desc[i+1];
-					i -= 1;
-				}
-				x->chave[i+1] = key;
-				x->desc[i+2] = filho_direito;
-				x->num_chaves += 1;
-
-				*chave_promovida = snull;
-				return NULL;
-			} else {
-				return divide_no (x, key, filho_direito, chave_promovida);
-			}
-		} else {
-			*chave_promovida = snull;
-			return NULL;
-		}
-	}
-}
-
-node_Btree* insere (node_Btree *root, Chave key) {
-	node_Btree* x;
-	node_Btree* filho_direito;
-	Chave chave_promovida;
-
-	chave_promovida = snull;
-
-	// Se a raiz ainda não foi criada, crie-a
-	if ((root) == NULL) {
-		x = cria_no();
-		x->folha = TRUE;
-		x->num_chaves = 1;
-		x->chave[0] = key;
-
-		root = x;
-	} else {
-		//Caso contrario, chama inserção auxiliar
-		filho_direito = insere_aux(root, key, &chave_promovida);
-
-		// Se houve chave promovida
-		if (chave_promovida.rrn != snull.rrn) {
-			// Cria nó pai
-			x = cria_no();
-			x->folha = FALSE;
-			x->num_chaves = 1;
-			x->chave[0] = chave_promovida;
-
-			// E seta filhos dele como nó antigo e o filho_direito retornado por insere_aux
-			x->desc[0] = root;
-			x->desc[1] = filho_direito;
-
-			root = x; 
-		}
-	}
-	return root;
-}
-
-/* Cria um novo nó */
-node_Btree* cria_no () {
-	node_Btree* novo_no;
-
-	// Aloca, num_chaves inicial é 0, um novo nó começa sempre folha.
-	novo_no = (node_Btree*) malloc (sizeof(node_Btree));
-	novo_no->num_chaves = 0;
-	novo_no->chave = malloc (sizeof(Chave) * (M - 1));
-	novo_no->desc = malloc (sizeof(node_Btree) * M);
-	novo_no->folha = TRUE;
-
-	return novo_no;
-}
-
-
-void apagar_no(node_Btree **x) {
+int verifica_primo(int num) {
 	int i;
 
-	// Se o nó é nulo, acabamos de apaga-los
-	if ((*x) == NULL) {
-		return;
+	if (num < 2) {
+		return FALSE;
 	} else {
-		// Senão apague todos os filhos
-		for (i = 0; i < (*x)->num_chaves + 1; i++) {
-			apagar_no (&(*x)->desc[i]);
+		for (i = 2; i < num; i += 1) {
+			if (num % i == 0) {
+				return FALSE;
+			}
 		}
-		// E após isso libere a memória do nó atual.
-		free(*x);
-		*x = NULL;
+		return TRUE;
 	}
 }
 
+int prox_primo(int num) {
+	while (TRUE) {
+		if (verifica_primo(num)) {
+			return num;
+		} else {
+			num++;
+		}
+	} 
+}
 
-void criar_iprimary(Iprimary *iprimary, int nregistros, int ordem) {
+
+void criar_tabela(Hashtable *tabela, int tam) {
 	int i;
+
+	tabela->tam = tam;
+	tabela->v = (Chave**) malloc(sizeof(Chave*) * tabela->tam);
+
+	for (i = 0; i < tam; i += 1) {
+		tabela->v[i] = NULL;
+	}
+}
+
+void carregar_tabela(Hashtable *tabela) {
+	int i = 0;
+	Chave chave;
 	char *seek;
-	Chave elementoPrimario;
-	M = ordem;
-
-	iprimary->raiz = NULL;
-
 	// Para todos os registros, escanear a chave primaria
 	// Calcular rrn e inserir na arvore
-	for (i = 0; i < nregistros; i += 1) {
+	while (TRUE) {
 		seek = ARQUIVO + (TAM_REGISTRO * i);
 
-		sscanf (seek, "%[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@", 
-				elementoPrimario.pk);
+		if (sscanf (seek, "%[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@", 
+				chave.pk) == EOF) {
+			break;
+		}
 
-		elementoPrimario.rrn = TAM_REGISTRO * i;
+		chave.rrn = TAM_REGISTRO * i;
+		chave.estado = OCUPADO;
 
-		iprimary->raiz = insere (iprimary->raiz, elementoPrimario);
+		insere (tabela, chave, FALSE);
+		i++;
 	}
 }
 
-void criar_iwinner(Iwinner *iwinner, int nregistros) {
-	int i;
-	char *seek;
-
-	// Para indice secundario de vencedores, escanear a PK e vencedor
-	// E adicionar na lista estatica
-	for (i = 0; i < nregistros; i += 1) {
-		seek = ARQUIVO + (TAM_REGISTRO * i);
-
-		sscanf (seek, "%[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@%[^@]@%*[^@]@%*[^@]@%*[^@]@", 
-				iwinner[i].pk, iwinner[i].vencedor);
-	}
-
-	// Ordenar corretamente.
-	quick_sort (iwinner, 0, nregistros, sizeof(Iwinner), compareWinnerKeysNames);
-}
-
-void criar_imvp(Imvp *imvp, int nregistros) {
-	int i;
-	char *seek;
-
-	// Mesmo processo que o iwinner, só que vencedor neste caso é mvp
-	for (i = 0; i < nregistros; i += 1) {
-		seek = ARQUIVO + (TAM_REGISTRO * i);
-
-		sscanf (seek, "%[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@%[^@]@", 
-				imvp[i].pk, imvp[i].mvp);
-	}
-
-	quick_sort (imvp, 0, nregistros, sizeof(Imvp), compareMVPKeysNames);
-}
-
-void cadastrar(Iprimary *iprimary, Iwinner *iwinner, Imvp *imvp, int* nregistros){
+void cadastrar(Hashtable *tabela){
 	Partida match;
 	int i;
 	Chave chave;
-	node_Btree* pagina;
 	char reg_match[TAM_REGISTRO];
 	char *seek;
+	int rrn;
 
 	readMatch (&match);
 	strcpy (chave.pk, match.pk);
-	if (iprimary->raiz != NULL) {
-		pagina = busca_pagina (iprimary->raiz, chave, FALSE);	
-	}
+
+	rrn = busca_tabela (*tabela, chave);	
 
 	// Se não encontramos pagina, então podemos cadastrar um novo elemento, senão erro
-	if (pagina != NULL) {
+	if (rrn != -1) {
 		printf (ERRO_PK_REPETIDA, match.pk);
 	} else {
 		// Lemos todos os valores da partida e escrevemos no buffer reg_match
@@ -852,29 +336,16 @@ void cadastrar(Iprimary *iprimary, Iwinner *iwinner, Imvp *imvp, int* nregistros
 		}
 
 		// Vamos para o RRN do  elemento correto (fim do 'arquivo')
-		seek = ARQUIVO + (*nregistros * TAM_REGISTRO);
+		seek = ARQUIVO + (strlen(ARQUIVO)/TAM_REGISTRO);
 
 		// E copiamos o reg_match para a posição desejada
 		strncpy (seek, reg_match, TAM_REGISTRO);
 
 		// Inserimos no indice primario (Arvore B)
-		chave.rrn = (*nregistros * TAM_REGISTRO);
-		iprimary->raiz = insere (iprimary->raiz, chave);
+		chave.rrn = (strlen(ARQUIVO)/TAM_REGISTRO);
+		chave.estado = OCUPADO;
 
-		// Copiamos os valoes para as listas do indices secundarios
-		strcpy (iwinner[*nregistros].pk, match.pk);
-		strcpy (iwinner[*nregistros].vencedor, match.vencedor);
-
-		strcpy (imvp[*nregistros].pk, match.pk);
-		strcpy (imvp[*nregistros].mvp, match.mvp);
-
-		// Atualizamos o no de registros
-		*nregistros += 1;
-
-		// Ordenamos os indices secundarios novamente.
-		quick_sort (iwinner, 0, *nregistros, sizeof(Iwinner), compareWinnerKeysNames);
-
-		quick_sort (imvp, 0, *nregistros, sizeof(Imvp), compareMVPKeysNames);
+		insere (tabela, chave, TRUE);
 	}
 }
 
@@ -1065,182 +536,131 @@ void readMatch (Partida *element) {
 	createPrimaryKey (element);
 }
 
-void alterar(Iprimary iprimary) {
-	char search[9], matchDuration[6], dummy[TAM_REGISTRO];
-	int primaryPosition, str_size;
-	Chave element;
+void update (int rrn) {
+	int str_size;
+	char matchDuration[6], dummy[TAM_REGISTRO];
 	Partida match;
-	node_Btree* pagina;
 	char* seek;
+
+	// escaneamos duração de partida
+	scanMatchDuration (matchDuration);
+
+	//Atualizamos com os novos valores no arquivo.
+	seek = ARQUIVO + rrn;
+	sscanf (seek, "%[^@]@%[^@]@%[^@]@%[^@]@%[^@]@%[^@]@%[^@]@%[^@]@%[^@]@", 
+		match.pk, match.equipe_azul, match.equipe_vermelha, match.data_partida,
+		match.duracao, match.vencedor, match.placar1,
+		match.placar2, match.mvp);
+
+	strcpy (match.duracao, matchDuration);
+
+	str_size = sprintf (dummy, "%s@%s@%s@%s@%s@%s@%s@%s@%s@", 
+		match.pk, match.equipe_azul, match.equipe_vermelha, match.data_partida,
+		match.duracao, match.vencedor, match.placar1,
+		match.placar2, match.mvp);
+
+	strncpy (seek, dummy, str_size);
+}
+
+void alterar(Hashtable tabela) {
+	char search[20];
+	Chave element;
+	int rrn, pos = 0;
 
 	scanf("%[^\n]", search);
 	strcpy (element.pk, search);
+	
+	rrn = busca_tabela (tabela, element);	
 
-	pagina = busca_pagina (iprimary.raiz, element, FALSE);
+	if (rrn == -1) {
+		printf(REGISTRO_N_ENCONTRADO);
+	} else {
+		update (rrn);
+	}
+}
 
-	// se a pagina existe podemos alterar
-	if (pagina != NULL) {
-		// escaneamos duração de partida
-		scanMatchDuration (matchDuration);
+int busca_tabela(Hashtable tabela, Chave element) {
+	int hashPos, rrn = -1;
+	Chave *list;
 
-		//buscamos a posicao dentro da pagina
-		primaryPosition = binarySearch (pagina->chave, &element, 0, pagina->num_chaves - 1, sizeof (Chave), compareKeys);
-		
-		//Atualizamos com os novos valores no arquivo.
-		seek = ARQUIVO + pagina->chave[primaryPosition].rrn;
-		sscanf (seek, "%[^@]@%[^@]@%[^@]@%[^@]@%[^@]@%[^@]@%[^@]@%[^@]@%[^@]@", 
-			match.pk, match.equipe_azul, match.equipe_vermelha, match.data_partida,
-			match.duracao, match.vencedor, match.placar1,
-			match.placar2, match.mvp);
+	hashPos = hash (element, tabela.tam); 
 
-		strcpy (match.duracao, matchDuration);
+	list = tabela.v[hashPos];
 
-		str_size = sprintf (dummy, "%s@%s@%s@%s@%s@%s@%s@%s@%s@", 
-			match.pk, match.equipe_azul, match.equipe_vermelha, match.data_partida,
-			match.duracao, match.vencedor, match.placar1,
-			match.placar2, match.mvp);
+	while (list != NULL) {
+		if (strcmp (list->pk, element.pk) == 0) {
+			rrn = list->rrn;
+		}
+		list = list->prox;
+	}
+
+	return rrn;
+}
+
+void buscar(Hashtable tabela) {
+	char search[20];
+	Chave element;
+	int rrn;
+
+	scanf ("%[^\n]", search);
+	strcpy (element.pk, search);
+	
+	rrn = busca_tabela (tabela, element);
+
+	if (rrn == -1) {
+		printf(REGISTRO_N_ENCONTRADO);
+	} else {
+		exibir_registro (rrn);
+	}
+}
+
+void remover (Hashtable *tabela) {
+	Chave element;
+	Partida match;
+	char* seek;
+	char dummy[TAM_REGISTRO];
+	int rrn, str_size;
+
+	getchar();
+	scanf ("%[^\n]", element.pk);
+
+
+	rrn = busca_tabela (*tabela, element);
+
+	if (rrn != -1) {
+		seek = ARQUIVO + rrn;
+
+		sscanf (seek, "%[^@]", match.pk);
+
+		match.pk[0] = '*';
+		match.pk[1] = '|';
+
+		str_size = sprintf (dummy, "%s", match.pk);
 
 		strncpy (seek, dummy, str_size);
+
+		tabela->v[pos].estado = REMOVIDO;
 	} else {
 		printf (REGISTRO_N_ENCONTRADO);
 	}
-
 }
 
-void buscar(Iprimary iprimary, Iwinner *iwinner, Imvp *imvp, int nregistros) {
-	char menuOption;
-	char search[40];
-	Chave pElement;
-	Iwinner wElement;
-	Imvp mElement;
-	/*printListOptions();*/
-	getchar();
-	scanf("%c\n", &menuOption);
-	switch(menuOption) { 
-		case '1':
-			scanf ("%[^\n]", search);
-			strcpy (pElement.pk, search);
-			printf (NOS_PERCORRIDOS, search);
-			busca_resultados (iprimary, pElement, TRUE);
-			break;
-		case '2':
-			scanf("%[^\n]", search);
-			strcpy (wElement.vencedor, search);
-			searchMatchesOrderByWinner (iwinner, iprimary, wElement, nregistros);
-			break;
-		case '3':
-			scanf("%[^\n]", search);
-			strcpy (mElement.mvp, search);
-			searchMatchesOrderByMVP (imvp, iprimary, mElement, nregistros);
-			break;
-		default:
-			break;
-	}
-}
-
-void busca_resultados(Iprimary iprimary, Chave chave, int imprimaAdicional) {
-	node_Btree *pagina;
-	int primaryPosition;
-
-	pagina = busca_pagina (iprimary.raiz, chave, imprimaAdicional);
-	if (imprimaAdicional) printf ("\n");
-	if (pagina != NULL) {
-		primaryPosition = binarySearch (pagina->chave, &chave, 0, pagina->num_chaves - 1, sizeof (Chave), compareKeys);
-		exibir_registro (pagina->chave[primaryPosition].rrn);
-
-		ultimaBusca = *pagina;	
-	} else {
-		printf(REGISTRO_N_ENCONTRADO);
-	}
-}
-
-void busca_ultimaPagina (Iprimary iprimary, Chave chave) {
-	int keyPos;
-
-	// verifica se a busca atual não está fazendo uma busca desnecessaria
-	if (ultimaBusca.num_chaves != -1) {
-		// se o elemento estava na ultima pagina em memoria
-		keyPos = binarySearch (ultimaBusca.chave, &chave, 0, ultimaBusca.num_chaves - 1, sizeof (Chave), compareKeys);
-		// apenas exiba o registro, senão procure na arvore b por outra pagina
-		if (keyPos != -1) {
-			exibir_registro (ultimaBusca.chave[keyPos].rrn);	
-		} else {
-			busca_resultados (iprimary, chave, FALSE);
-		}
-	} else {
-		busca_resultados (iprimary, chave, FALSE);
-	}
-}
-
-
-void searchMatchesOrderByWinner (Iwinner *iwinner, Iprimary iprimary, Iwinner element, int size) {
+void imprimir_tabela (Hashtable tabela) {
 	int i;
-	int *result, resultSize;
-	Chave chave;
-
-	// Procura resultados no indice secundario
-	result = malloc (sizeof(int) * size);
-	resultSize = binarySearchAll (iwinner, &element, 0, size, result, sizeof(Iwinner), compareWinner); 
-
-	// Se houveram resultados, ordene resultados, e busque na ultima pagina
-	if (resultSize != -1) {
-		quick_sort (result, 0, resultSize, sizeof(int), compareInt);
-		
-		for (i = 0; i < resultSize; i++) { 
-			strcpy (chave.pk, iwinner[result[i]].pk);
-			busca_ultimaPagina (iprimary, chave);
-		}
-	} else {
-		printf(REGISTRO_N_ENCONTRADO);
+	for (i = 0; i < tabela.tam; i++) {
+		printf ("[%d]", i);
+		printList (tabela.v[i]);
+		printf ("\n");
 	}
-	free(result);
 }
 
-void searchMatchesOrderByMVP (Imvp *imvp, Iprimary iprimary, Imvp element, int size) {
+void liberar_tabela (Hashtable *tabela) {
 	int i;
-	int *result, resultSize;
-	Chave chave;
-
-	result = malloc (sizeof(int) * size);
-	// Procura resultados no indice secundario
-	resultSize = binarySearchAll (imvp, &element, 0, size, result, sizeof(Imvp), compareMVP); 
-
-	// Se houveram resultados, ordene resultados, e busque na ultima pagina
-	if (resultSize != -1) {
-		quick_sort (result, 0, resultSize, sizeof(int), compareInt);
-		
-		for (i = 0; i < resultSize; i++) { 
-			strcpy (chave.pk, imvp[result[i]].pk);
-
-			busca_ultimaPagina (iprimary, chave);
-		}
-	} else {
-		printf(REGISTRO_N_ENCONTRADO);
-	}
-	free(result);
-}
-
-void listar(Iprimary iprimary, Iwinner *iwinner, Imvp *imvp, int nregistros) {
-	char menuOption;
-	getchar();
-	scanf(" %c", &menuOption);
-
-	switch(menuOption) { 
-		case '1':
-			imprimeArvoreB (iprimary.raiz, 1);
-			printf("\n");
-			break;
-		case '2':
-			printMatchesOrderByWinner (iwinner, iprimary, nregistros);
-			break;
-		case '3':
-			printMatchesOrderByMVP (imvp, iprimary, nregistros);
-			break;
-		default:
-			ignore();
-			break;
+	for (i = 0; i < tabela->tam; i += 1) {
+		free (tabela->v[i]);
 	}
 }
+
 
 Partida recuperar_registro (int rrn) {
 	Partida match;
@@ -1254,37 +674,73 @@ Partida recuperar_registro (int rrn) {
 	return match;
 }
 
-/*
-	A function to print all matches ordered by winner.
-	It is necessary to find the position of the winner ordered register in the primaryIndex.
-*/
-void printMatchesOrderByWinner (Iwinner *iwinner, Iprimary iprimary, int nregistros) {
-	int i;
-	Chave chave;
+int hash (Chave chave, int tam) {
+	int i, sum = 0;
+	for (i = 0; i < 8; i += 1) {
+		sum += (i + 1) * chave.pk[i];
+	}
+	return sum % tam;
+}
 
-	if (iwinner != NULL) {
-		for (i = 0; i < nregistros; i += 1) {
-			strcpy (chave.pk, iwinner[i].pk);
-			busca_ultimaPagina (iprimary, chave);
-		}	
+void insere (Hashtable *tabela, Chave chave, int imprimeTabela) {
+	int hashPos, inseriuSucesso;
+	hashPos = hash (chave, tabela->tam);
+
+	inseriuSucesso = addElementInOrder (tabela->v[hashPos], chave);
+	if (inseriuSucesso) {
+		printf (REGISTRO_INSERIDO, chave.pk);	
+	} else {
+		printf(ERRO_PK_REPETIDA, chave.pk);
 	}
 	
-}
+ }
 
-/*
-	A function to print all matches ordereb by mvp.
-	It is necessary to find the position of the mvp ordered register in the primaryIndex.
-*/
-void printMatchesOrderByMVP (Imvp *imvp, Iprimary iprimary, int nregistros) {
-	int i;
-	Chave chave;
+ int addElementInOrder(Chave **list, Chave nodeValues) {
+	Chave *tempNode;
+	Chave *copy = *list;
+	Chave *prev = NULL;
 
-	if (imvp != NULL) {
-		for (i = 0; i < nregistros; i += 1) {
-			strcpy (chave.pk, imvp[i].pk);
-			busca_ultimaPagina (iprimary, chave);
+	if (*list == NULL) {
+		(*list) = nodeValues;
+		(*list)->prox = NULL;
+		return TRUE;
+	} else {
+		tempNode = nodeValues;
+		if (strcmp (nodeValues.pk,(*list)->pk) < 0) {
+			tempNode->prox = (*list);
+			(*list) = tempNode;
+			return TRUE;
+		} else {
+			while (copy != NULL && strcmp (nodeValues.pk,(*list)->pk) >= 0) {
+				prev = copy;
+				copy = copy->prox;
+			}
+			if (strcmp (nodeValues.pk,(*list)->pk) == 0) {
+				return FALSE;
+			} else {
+				tempNode->prox = copy;
+				prev->prox = tempNode;
+				return TRUE;	
+			}
 		}
+		return FALSE;
 	}
 }
 
 
+void freeList(Chave **list) {
+	Chave* copy;
+	while((*list) != NULL) {
+		copy = *list;
+		(*list) = (*list)->prox;
+		free(copy);
+	}
+	*list = NULL;
+}
+
+void printList(Chave *list) {
+	while (list != NULL) {
+		printf(" %s", list->pk);
+		list = list->prox;
+	}
+}

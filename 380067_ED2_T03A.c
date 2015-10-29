@@ -94,14 +94,14 @@ void carregar_arquivo();
 /* Exibe o jogador */
 void exibir_registro(int rrn);
 
+void carregar_tabela(Hashtable *tabela);
+
+void liberar_tabela (Hashtable *tabela);
+
 /* <<< DECLARE AQUI OS PROTOTIPOS >>> */
 int verifica_primo(int num);
 
 int prox_primo(int num);
-
-/* Recebe do usuário uma string simulando o arquivo completo e retorna o número
- * de registros. */
-int carregar_arquivo();
 
 /* Exibe o jogador */
 void exibir_registro(int rrn);
@@ -148,7 +148,7 @@ void alterar(Hashtable tabela);
 /* Busca um elemento */
 void buscar(Hashtable tabela);
 
-void busca_tabela (Hashtable tabela, Chave element, int *pos);
+int busca_tabela (Hashtable tabela, Chave element, int *pos);
 
 void imprimir_tabela (Hashtable tabela);
 
@@ -157,9 +157,9 @@ void remover (Hashtable *tabela);
 /* Recupera um registro através do seu rrn */
 Partida recuperar_registro (int rrn);
 
-void hash (Chave chave, int tam);
+int hash (Chave chave, int tam);
 
-void insere (Hashtable *tabela, Chave chave);
+void insere (Hashtable *tabela, Chave chave, int imprimeTabela);
 
 /* ==========================================================================
  * ============================ FUNÇÃO PRINCIPAL ============================
@@ -286,36 +286,11 @@ int prox_primo(int num) {
 }
 
 
-/* Recebe do usuário uma string simulando o arquivo completo e retorna o número
- * de registros. */
-int carregar_arquivo() {
-	scanf("%[^\n]\n", ARQUIVO);
-	return strlen(ARQUIVO) / TAM_REGISTRO;
-}
-
-/* Exibe a partida */
-void exibir_registro(int rrn) {
-
-	Partida j = recuperar_registro(rrn);
-
-	printf("%s\n", j.pk);
-	printf("%s\n", j.equipe_azul);
-	printf("%s\n", j.equipe_vermelha);
-	printf("%s\n", j.data_partida);
-	printf("%s\n", j.duracao);
-	printf("%s\n", j.vencedor);
-	printf("%s\n", j.placar1);
-	printf("%s\n", j.placar2);
-	printf("%s\n", j.mvp);
-	printf("\n");
-}
-
-
 void criar_tabela(Hashtable *tabela, int tam) {
 	int i;
 
 	tabela->tam = tam;
-	tabela->v = (Chave) malloc(sizeof(Chave) * tabela->tam);
+	tabela->v = (Chave*) malloc(sizeof(Chave) * tabela->tam);
 
 	for (i = 0; i < tam; i += 1) {
 		tabela->v[i].estado = LIVRE;
@@ -325,20 +300,22 @@ void criar_tabela(Hashtable *tabela, int tam) {
 void carregar_tabela(Hashtable *tabela) {
 	int i = 0;
 	Chave chave;
+	char *seek;
 	// Para todos os registros, escanear a chave primaria
 	// Calcular rrn e inserir na arvore
 	while (TRUE) {
 		seek = ARQUIVO + (TAM_REGISTRO * i);
 
 		if (sscanf (seek, "%[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@%*[^@]@", 
-				chave.pk) != 1) {
+				chave.pk) == EOF) {
 			break;
 		}
 
 		chave.rrn = TAM_REGISTRO * i;
 		chave.estado = OCUPADO;
 
-		insere (tabela, chave);
+		insere (tabela, chave, FALSE);
+		i++;
 	}
 }
 
@@ -353,7 +330,7 @@ void cadastrar(Hashtable *tabela){
 	readMatch (&match);
 	strcpy (chave.pk, match.pk);
 
-	rrn = busca_tabela (tabela, chave, &pos);	
+	rrn = busca_tabela (*tabela, chave, &pos);	
 
 	// Se não encontramos pagina, então podemos cadastrar um novo elemento, senão erro
 	if (rrn != -1) {
@@ -380,7 +357,7 @@ void cadastrar(Hashtable *tabela){
 		chave.rrn = (strlen(ARQUIVO)/TAM_REGISTRO);
 		chave.estado = OCUPADO;
 
-		insere (tabela, chave);
+		insere (tabela, chave, TRUE);
 	}
 }
 
@@ -614,7 +591,7 @@ void alterar(Hashtable tabela) {
 	}
 }
 
-void busca_tabela(Hashtable tabela, Chave element, int *pos) {
+int busca_tabela(Hashtable tabela, Chave element, int *pos) {
 	int hashPos, colisionPos, colisoes = 0;
 	hashPos = hash (element, tabela.tam); 
 
@@ -625,16 +602,16 @@ void busca_tabela(Hashtable tabela, Chave element, int *pos) {
 		return tabela.v[hashPos].rrn;
 	} else {
 		colisoes += 1;
-		colisionPos = (hashPos + colisoes) % tabela->tam;
+		colisionPos = (hashPos + colisoes) % tabela.tam;
 		while (colisionPos != hashPos) {
-			if (strcmp (tabela->v[colisionPos].pk, element.pk) == 0) {
+			if (strcmp (tabela.v[colisionPos].pk, element.pk) == 0) {
 				break;
 			}
 
 			colisoes += 1;
-			colisionPos = (hashPos + colisoes) % tabela->tam;
+			colisionPos = (hashPos + colisoes) % tabela.tam;
 		}
-		if (colisionPos % tabela->tam == hashPos) {
+		if (colisionPos % tabela.tam == hashPos) {
 			return -1;
 		} else {
 			*pos = colisionPos;
@@ -644,7 +621,6 @@ void busca_tabela(Hashtable tabela, Chave element, int *pos) {
 }
 
 void buscar(Hashtable tabela) {
-	char menuOption;
 	char search[20];
 	Chave element;
 	int rrn, pos = 0;
@@ -672,27 +648,21 @@ void remover (Hashtable *tabela) {
 	scanf ("%[^\n]", element.pk);
 
 
-	rrn = busca_tabela (tabela, element, &pos);
+	rrn = busca_tabela (*tabela, element, &pos);
 
 	if (rrn != -1) {
 		seek = ARQUIVO + rrn;
 
-		sscanf (seek, "%[^@]@%[^@]@%[^@]@%[^@]@%[^@]@%[^@]@%[^@]@%[^@]@%[^@]@", 
-			match.pk, match.equipe_azul, match.equipe_vermelha, match.data_partida,
-			match.duracao, match.vencedor, match.placar1,
-			match.placar2, match.mvp);
+		sscanf (seek, "%[^@]", match.pk);
 
 		match.pk[0] = '*';
 		match.pk[1] = '|';
 
-		str_size = sprintf (dummy, "%s@%s@%s@%s@%s@%s@%s@%s@%s@", 
-			match.pk, match.equipe_azul, match.equipe_vermelha, match.data_partida,
-			match.duracao, match.vencedor, match.placar1,
-			match.placar2, match.mvp);
+		str_size = sprintf (dummy, "%s", match.pk);
 
 		strncpy (seek, dummy, str_size);
 
-		tabela.v[pos].estado = REMOVIDO;
+		tabela->v[pos].estado = REMOVIDO;
 	} else {
 		printf (REGISTRO_N_ENCONTRADO);
 	}
@@ -713,8 +683,8 @@ void imprimir_tabela (Hashtable tabela) {
 	}
 }
 
-void liberar_tabela (Hashtable tabela) {
-	free (tabela.v);
+void liberar_tabela (Hashtable *tabela) {
+	free (tabela->v);
 }
 
 
@@ -731,33 +701,38 @@ Partida recuperar_registro (int rrn) {
 }
 
 int hash (Chave chave, int tam) {
-	int i, result, sum = 0;
+	int i, sum = 0;
 	for (i = 0; i < 8; i += 1) {
 		sum += (i + 1) * chave.pk[i];
 	}
 	return sum % tam;
 }
 
-void insere (Hashtable *tabela, Chave chave) {
-	Chave temp;
+void insere (Hashtable *tabela, Chave chave, int imprimeTabela) {
 	int hashPos, colisoes = 0;
 	int colisionPos;
 
 	hashPos = hash (chave, tabela->tam);
 
-	if (tabela->v[hashPos].estado == LIVRE) {
+	if (tabela->v[hashPos].estado == LIVRE || tabela->v[hashPos].estado == REMOVIDO) {
 		tabela->v[hashPos] = chave;
-		printf (REGISTRO_INSERIDO, chave.pk, colisoes);
+		if (imprimeTabela) {
+			printf (REGISTRO_INSERIDO, chave.pk, colisoes);	
+		}
 	} else {
 		if (strcmp (tabela->v[hashPos].pk, chave.pk) == 0) {
-			printf (ERRO_PK_REPETIDA, chave.pk);
+			if (imprimeTabela) {
+				printf (ERRO_PK_REPETIDA, chave.pk);	
+			}
 		} else {
 			colisoes += 1;
 			colisionPos = (hashPos + colisoes) % tabela->tam;
 			while (colisionPos != hashPos) {
-				if (tabela->v[colisionPos].estado == LIVRE) {
+				if (tabela->v[colisionPos].estado == LIVRE || tabela->v[colisionPos].estado == REMOVIDO) {
 					tabela->v[colisionPos] = chave;
-					printf (REGISTRO_INSERIDO, chave.pk, colisoes);
+					if (imprimeTabela) {
+						printf (REGISTRO_INSERIDO, chave.pk, colisoes);	
+					}
 					break;
 				}
 
@@ -765,7 +740,9 @@ void insere (Hashtable *tabela, Chave chave) {
 				colisionPos = (hashPos + colisoes) % tabela->tam;
 			}
 			if (colisionPos % tabela->tam == hashPos) {
-				printf (ERRO_TABELA_CHEIA);
+				if (imprimeTabela) {
+					printf (ERRO_TABELA_CHEIA);
+				}
 			}		
 		}
 	}
