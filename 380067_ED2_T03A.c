@@ -348,13 +348,13 @@ void cadastrar(Hashtable *tabela){
 		}
 
 		// Vamos para o RRN do  elemento correto (fim do 'arquivo')
-		seek = ARQUIVO + (strlen(ARQUIVO)/TAM_REGISTRO);
+		seek = ARQUIVO + (strlen(ARQUIVO)/TAM_REGISTRO * TAM_REGISTRO);
 
 		// E copiamos o reg_match para a posição desejada
 		strncpy (seek, reg_match, TAM_REGISTRO);
 
 		// Inserimos no indice primario (Arvore B)
-		chave.rrn = (strlen(ARQUIVO)/TAM_REGISTRO);
+		chave.rrn = (strlen(ARQUIVO)/TAM_REGISTRO * TAM_REGISTRO - TAM_REGISTRO);
 		chave.estado = OCUPADO;
 
 		insere (tabela, chave, TRUE);
@@ -593,18 +593,19 @@ void alterar(Hashtable tabela) {
 
 int busca_tabela(Hashtable tabela, Chave element, int *pos) {
 	int hashPos, colisionPos, colisoes = 0;
+	
+	if (tabela.tam == 0) return -1;
+
 	hashPos = hash (element, tabela.tam); 
 
-	if (tabela.v[hashPos].estado == LIVRE || tabela.v[hashPos].estado == REMOVIDO) {
-		return -1;
-	} else  if (tabela.v[hashPos].estado == OCUPADO && strcmp (tabela.v[hashPos].pk, element.pk) == 0){
+	if (tabela.v[hashPos].estado == OCUPADO && strcmp (tabela.v[hashPos].pk, element.pk) == 0){
 		*pos = hashPos;
 		return tabela.v[hashPos].rrn;
 	} else {
 		colisoes += 1;
 		colisionPos = (hashPos + colisoes) % tabela.tam;
 		while (colisionPos != hashPos) {
-			if (strcmp (tabela.v[colisionPos].pk, element.pk) == 0) {
+			if (tabela.v[colisionPos].estado == OCUPADO && strcmp (tabela.v[colisionPos].pk, element.pk) == 0) {
 				break;
 			}
 
@@ -618,6 +619,7 @@ int busca_tabela(Hashtable tabela, Chave element, int *pos) {
 			return tabela.v[colisionPos].rrn;
 		}
 	}
+	return - 1;
 }
 
 void buscar(Hashtable tabela) {
@@ -685,6 +687,7 @@ void imprimir_tabela (Hashtable tabela) {
 
 void liberar_tabela (Hashtable *tabela) {
 	free (tabela->v);
+	tabela->tam = 0;
 }
 
 

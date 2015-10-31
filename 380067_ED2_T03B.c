@@ -34,6 +34,10 @@
 #define ERRO_PK_REPETIDA "ERRO: Ja existe um registro com a chave primaria: %s.\n\n"
 #define REGISTRO_INSERIDO "Registro %s inserido com sucesso.\n\n"
 
+/* Definir valor de TRUE E FALSE */
+#define TRUE 1
+#define FALSE 0
+
 /* Registro da partida */
 typedef struct {
 	char pk[TAM_PRIMARY_KEY];
@@ -65,6 +69,8 @@ typedef struct {
 
 /* Variáveis globais */
 char ARQUIVO[TAM_ARQUIVO];
+
+
 
 
 /* ==========================================================================
@@ -134,7 +140,7 @@ void alterar(Hashtable tabela);
 /* Busca um elemento */
 void buscar(Hashtable tabela);
 
-int busca_tabela (Hashtable tabela, Chave element);
+int busca_tabela (Hashtable tabela, Chave element, int *pos);
 
 void imprimir_tabela (Hashtable tabela);
 
@@ -147,6 +153,15 @@ int hash (Chave chave, int tam);
 
 void insere (Hashtable *tabela, Chave chave, int imprimeTabela);
 
+int addElementInOrder(Chave **list, Chave nodeValues);
+
+void createNode(Chave ** tempNode, Chave nodeValues);
+
+int removeElement(Chave **list, Chave chave);
+
+void freeList(Chave **list);
+
+void printList(Chave *list);
 
 /* ==========================================================================
  * ============================ FUNÇÃO PRINCIPAL ============================
@@ -300,7 +315,7 @@ void carregar_tabela(Hashtable *tabela) {
 		}
 
 		chave.rrn = TAM_REGISTRO * i;
-		chave.estado = OCUPADO;
+
 
 		insere (tabela, chave, FALSE);
 		i++;
@@ -313,12 +328,12 @@ void cadastrar(Hashtable *tabela){
 	Chave chave;
 	char reg_match[TAM_REGISTRO];
 	char *seek;
-	int rrn;
+	int rrn, pos;
 
 	readMatch (&match);
 	strcpy (chave.pk, match.pk);
 
-	rrn = busca_tabela (*tabela, chave);	
+	rrn = busca_tabela (*tabela, chave, &pos);	
 
 	// Se não encontramos pagina, então podemos cadastrar um novo elemento, senão erro
 	if (rrn != -1) {
@@ -336,14 +351,13 @@ void cadastrar(Hashtable *tabela){
 		}
 
 		// Vamos para o RRN do  elemento correto (fim do 'arquivo')
-		seek = ARQUIVO + (strlen(ARQUIVO)/TAM_REGISTRO);
+		seek = ARQUIVO + (strlen(ARQUIVO)/TAM_REGISTRO * TAM_REGISTRO);
 
 		// E copiamos o reg_match para a posição desejada
 		strncpy (seek, reg_match, TAM_REGISTRO);
 
 		// Inserimos no indice primario (Arvore B)
-		chave.rrn = (strlen(ARQUIVO)/TAM_REGISTRO);
-		chave.estado = OCUPADO;
+		chave.rrn = (strlen(ARQUIVO)/TAM_REGISTRO * TAM_REGISTRO - TAM_REGISTRO);
 
 		insere (tabela, chave, TRUE);
 	}
@@ -565,12 +579,12 @@ void update (int rrn) {
 void alterar(Hashtable tabela) {
 	char search[20];
 	Chave element;
-	int rrn, pos = 0;
+	int rrn, pos;
 
 	scanf("%[^\n]", search);
 	strcpy (element.pk, search);
 	
-	rrn = busca_tabela (tabela, element);	
+	rrn = busca_tabela (tabela, element, &pos);	
 
 	if (rrn == -1) {
 		printf(REGISTRO_N_ENCONTRADO);
@@ -579,11 +593,14 @@ void alterar(Hashtable tabela) {
 	}
 }
 
-int busca_tabela(Hashtable tabela, Chave element) {
+int busca_tabela(Hashtable tabela, Chave element, int *pos) {
 	int hashPos, rrn = -1;
 	Chave *list;
 
+	if (tabela.tam == 0) return rrn;
+
 	hashPos = hash (element, tabela.tam); 
+	*pos = hashPos;
 
 	list = tabela.v[hashPos];
 
@@ -600,12 +617,12 @@ int busca_tabela(Hashtable tabela, Chave element) {
 void buscar(Hashtable tabela) {
 	char search[20];
 	Chave element;
-	int rrn;
+	int rrn, pos;
 
 	scanf ("%[^\n]", search);
 	strcpy (element.pk, search);
 	
-	rrn = busca_tabela (tabela, element);
+	rrn = busca_tabela (tabela, element, &pos);
 
 	if (rrn == -1) {
 		printf(REGISTRO_N_ENCONTRADO);
@@ -619,13 +636,13 @@ void remover (Hashtable *tabela) {
 	Partida match;
 	char* seek;
 	char dummy[TAM_REGISTRO];
-	int rrn, str_size;
+	int rrn, str_size, pos;
 
 	getchar();
 	scanf ("%[^\n]", element.pk);
 
 
-	rrn = busca_tabela (*tabela, element);
+	rrn = busca_tabela (*tabela, element, &pos);
 
 	if (rrn != -1) {
 		seek = ARQUIVO + rrn;
@@ -639,7 +656,7 @@ void remover (Hashtable *tabela) {
 
 		strncpy (seek, dummy, str_size);
 
-		tabela->v[pos].estado = REMOVIDO;
+		removeElement (&(*tabela).v[pos], element);
 	} else {
 		printf (REGISTRO_N_ENCONTRADO);
 	}
@@ -659,6 +676,7 @@ void liberar_tabela (Hashtable *tabela) {
 	for (i = 0; i < tabela->tam; i += 1) {
 		free (tabela->v[i]);
 	}
+	tabela->tam = 0;
 }
 
 
@@ -686,26 +704,26 @@ void insere (Hashtable *tabela, Chave chave, int imprimeTabela) {
 	int hashPos, inseriuSucesso;
 	hashPos = hash (chave, tabela->tam);
 
-	inseriuSucesso = addElementInOrder (tabela->v[hashPos], chave);
+	inseriuSucesso = addElementInOrder (&(*tabela).v[hashPos], chave);
 	if (inseriuSucesso) {
-		printf (REGISTRO_INSERIDO, chave.pk);	
+		if (imprimeTabela) printf (REGISTRO_INSERIDO, chave.pk);	
 	} else {
-		printf(ERRO_PK_REPETIDA, chave.pk);
+		if (imprimeTabela) printf(ERRO_PK_REPETIDA, chave.pk);
 	}
 	
  }
 
- int addElementInOrder(Chave **list, Chave nodeValues) {
+int addElementInOrder(Chave **list, Chave nodeValues) {
 	Chave *tempNode;
 	Chave *copy = *list;
 	Chave *prev = NULL;
 
 	if (*list == NULL) {
-		(*list) = nodeValues;
+		createNode (list, nodeValues);
 		(*list)->prox = NULL;
 		return TRUE;
 	} else {
-		tempNode = nodeValues;
+		createNode (&tempNode, nodeValues);
 		if (strcmp (nodeValues.pk,(*list)->pk) < 0) {
 			tempNode->prox = (*list);
 			(*list) = tempNode;
@@ -727,6 +745,35 @@ void insere (Hashtable *tabela, Chave chave, int imprimeTabela) {
 	}
 }
 
+void createNode(Chave ** tempNode, Chave nodeValues) {
+	Chave* copy;
+	copy = (Chave*) malloc(sizeof(Chave));
+	strcpy(copy->pk, nodeValues.pk);
+	copy->rrn = nodeValues.rrn;
+	*tempNode = copy;
+}
+
+int removeElement(Chave **list, Chave chave) {
+	Chave* copy = *list;
+	Chave* deletedItem;
+	Chave* prev = NULL; 
+	while (copy != NULL && strcmp(chave.pk, copy->pk) >= 0) {
+		if (strcmp (copy->pk, chave.pk) == 0) {
+			deletedItem = copy;
+			if (prev == NULL) {
+				(*list) = deletedItem->prox;
+			} else {
+				prev->prox = deletedItem->prox;
+			}
+			free(deletedItem);
+			deletedItem = NULL;
+			return TRUE;
+		}
+		prev = copy;
+		copy = copy->prox;
+	}
+	return FALSE;
+}
 
 void freeList(Chave **list) {
 	Chave* copy;
