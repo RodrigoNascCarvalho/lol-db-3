@@ -94,13 +94,17 @@ void carregar_arquivo();
 /* Exibe o jogador */
 void exibir_registro(int rrn);
 
+/* Carrega a tabela na memória, alocando o que for necessário */
 void carregar_tabela(Hashtable *tabela);
 
+/* Libera a memória alocada da tabela e seta o tamanho pra 0 */
 void liberar_tabela (Hashtable *tabela);
 
 /* <<< DECLARE AQUI OS PROTOTIPOS >>> */
+/* Verifica se um número é primo na força bruta */
 int verifica_primo(int num);
 
+/* Função que procura o próximo primo imediato de num */
 int prox_primo(int num);
 
 /* Exibe o jogador */
@@ -148,17 +152,22 @@ void alterar(Hashtable tabela);
 /* Busca um elemento */
 void buscar(Hashtable tabela);
 
+/* Busca element na tabela e retorna o rrn do elemento em questão, também retorna a posição no array */
 int busca_tabela (Hashtable tabela, Chave element, int *pos);
 
+/* Função para imprimir tabela */
 void imprimir_tabela (Hashtable tabela);
 
+/* Função para remover elemento da tabela */
 void remover (Hashtable *tabela);
 
 /* Recupera um registro através do seu rrn */
 Partida recuperar_registro (int rrn);
 
+/* Função de hash */
 int hash (Chave chave, int tam);
 
+/* Função para inserir chave na tabela, opcional imprime a inserção. */
 void insere (Hashtable *tabela, Chave chave, int imprimeTabela);
 
 /* ==========================================================================
@@ -260,22 +269,28 @@ void exibir_registro(int rrn) {
 }
 
 /* <<< IMPLEMENTE AQUI AS FUNCOES >>> */
+/* Função para verificar se um número é primo */
 int verifica_primo(int num) {
 	int i;
 
+	// Se é menor que 2, o número não é primo
 	if (num < 2) {
 		return FALSE;
 	} else {
+		// Senão de 2 até num, verifique se ele é divisível por alguém além dele mesmo, se sim ele não é primo.
 		for (i = 2; i < num; i += 1) {
 			if (num % i == 0) {
 				return FALSE;
 			}
 		}
+		// Senão é primo
 		return TRUE;
 	}
 }
 
+/* Procura próximo primo a partir de num */
 int prox_primo(int num) {
+	//Verifica se o número é primo, senão o incrementa. 
 	while (TRUE) {
 		if (verifica_primo(num)) {
 			return num;
@@ -285,24 +300,28 @@ int prox_primo(int num) {
 	} 
 }
 
-
+/* Função para alocar memória para a tabela */
 void criar_tabela(Hashtable *tabela, int tam) {
 	int i;
 
+	// Inicializa tamanho da tabela
 	tabela->tam = tam;
+	// Aloca o array de Chaves com o tamanho da tabela 
 	tabela->v = (Chave*) malloc(sizeof(Chave) * tabela->tam);
 
+	// Seta todos os elementos como livres.
 	for (i = 0; i < tam; i += 1) {
 		tabela->v[i].estado = LIVRE;
 	}
 }
 
+/* Função para carregar a tabela do arquivo. */
 void carregar_tabela(Hashtable *tabela) {
 	int i = 0;
 	Chave chave;
 	char *seek;
 	// Para todos os registros, escanear a chave primaria
-	// Calcular rrn e inserir na arvore
+	// Calcular rrn e inserir na tabela
 	while (TRUE) {
 		seek = ARQUIVO + (TAM_REGISTRO * i);
 
@@ -312,6 +331,7 @@ void carregar_tabela(Hashtable *tabela) {
 		}
 
 		chave.rrn = TAM_REGISTRO * i;
+		//Lembrar de setar o elemento como ocupado.
 		chave.estado = OCUPADO;
 
 		insere (tabela, chave, FALSE);
@@ -319,6 +339,7 @@ void carregar_tabela(Hashtable *tabela) {
 	}
 }
 
+/* Função para cadastrar um elemento */
 void cadastrar(Hashtable *tabela){
 	Partida match;
 	int i;
@@ -327,9 +348,11 @@ void cadastrar(Hashtable *tabela){
 	char *seek;
 	int rrn, pos = 0;
 
+	// Le partida
 	readMatch (&match);
 	strcpy (chave.pk, match.pk);
 
+	// Procura o elemento na tabela
 	rrn = busca_tabela (*tabela, chave, &pos);	
 
 	// Se não encontramos pagina, então podemos cadastrar um novo elemento, senão erro
@@ -353,7 +376,7 @@ void cadastrar(Hashtable *tabela){
 		// E copiamos o reg_match para a posição desejada
 		strncpy (seek, reg_match, TAM_REGISTRO);
 
-		// Inserimos no indice primario (Arvore B)
+		// Inserimos no indice primario (Hash)
 		chave.rrn = (strlen(ARQUIVO)/TAM_REGISTRO * TAM_REGISTRO - TAM_REGISTRO);
 		chave.estado = OCUPADO;
 
@@ -564,16 +587,20 @@ void update (int rrn) {
 		match.duracao, match.vencedor, match.placar1,
 		match.placar2, match.mvp);
 
+	//Copiamos a duração
 	strcpy (match.duracao, matchDuration);
 
+	// Printamos num dummy 
 	str_size = sprintf (dummy, "%s@%s@%s@%s@%s@%s@%s@%s@%s@", 
 		match.pk, match.equipe_azul, match.equipe_vermelha, match.data_partida,
 		match.duracao, match.vencedor, match.placar1,
 		match.placar2, match.mvp);
 
+	// E depois copiamos ao buffer de arquivo
 	strncpy (seek, dummy, str_size);
 }
 
+/* Alterar elemento no arquivo */
 void alterar(Hashtable tabela) {
 	char search[20];
 	Chave element;
@@ -582,8 +609,10 @@ void alterar(Hashtable tabela) {
 	scanf("%[^\n]", search);
 	strcpy (element.pk, search);
 	
+	//Procura elemento na tabela
 	rrn = busca_tabela (tabela, element, &pos);	
 
+	// Se encontrar update
 	if (rrn == -1) {
 		printf(REGISTRO_N_ENCONTRADO);
 	} else {
@@ -591,17 +620,21 @@ void alterar(Hashtable tabela) {
 	}
 }
 
+/* Função que busca elemento na tabela */ 
 int busca_tabela(Hashtable tabela, Chave element, int *pos) {
 	int hashPos, colisionPos, colisoes = 0;
 	
 	if (tabela.tam == 0) return -1;
 
+	// Calcula posição do hash para elemento procurado
 	hashPos = hash (element, tabela.tam); 
 
+	// Se o elemento é encontrado de primeira, retorne posição e rrn
 	if (tabela.v[hashPos].estado == OCUPADO && strcmp (tabela.v[hashPos].pk, element.pk) == 0){
 		*pos = hashPos;
 		return tabela.v[hashPos].rrn;
 	} else {
+		// Senão devemos procurar pela sua inserçaõ pela colisão
 		colisoes += 1;
 		colisionPos = (hashPos + colisoes) % tabela.tam;
 		while (colisionPos != hashPos) {
@@ -612,9 +645,11 @@ int busca_tabela(Hashtable tabela, Chave element, int *pos) {
 			colisoes += 1;
 			colisionPos = (hashPos + colisoes) % tabela.tam;
 		}
+		// Se a colisão chega no hashPos, então procuramos o elemento e não achamos.
 		if (colisionPos % tabela.tam == hashPos) {
 			return -1;
 		} else {
+			// Senão retorne rrn e colisionPos
 			*pos = colisionPos;
 			return tabela.v[colisionPos].rrn;
 		}
@@ -622,6 +657,7 @@ int busca_tabela(Hashtable tabela, Chave element, int *pos) {
 	return - 1;
 }
 
+/* Função para buscar um elemento */
 void buscar(Hashtable tabela) {
 	char search[20];
 	Chave element;
@@ -632,6 +668,7 @@ void buscar(Hashtable tabela) {
 	
 	rrn = busca_tabela (tabela, element, &pos);
 
+	// Se encontrou elemento exibe registro
 	if (rrn == -1) {
 		printf(REGISTRO_N_ENCONTRADO);
 	} else {
@@ -639,6 +676,7 @@ void buscar(Hashtable tabela) {
 	}
 }
 
+/* Remover elemento */
 void remover (Hashtable *tabela) {
 	Chave element;
 	Partida match;
@@ -649,9 +687,10 @@ void remover (Hashtable *tabela) {
 	getchar();
 	scanf ("%[^\n]", element.pk);
 
-
+	// Procura elemento
 	rrn = busca_tabela (*tabela, element, &pos);
 
+	// Se o elemento existe vá até a posição no arquivo e marque como removido com *|
 	if (rrn != -1) {
 		seek = ARQUIVO + rrn;
 
@@ -670,6 +709,8 @@ void remover (Hashtable *tabela) {
 	}
 }
 
+
+/* Função para imprimir tabela */
 void imprimir_tabela (Hashtable tabela) {
 	int i;
 	for (i = 0; i < tabela.tam; i++) {
@@ -685,12 +726,13 @@ void imprimir_tabela (Hashtable tabela) {
 	}
 }
 
+/* Libera memória da tabela e seta tamanho pra 0 */
 void liberar_tabela (Hashtable *tabela) {
 	free (tabela->v);
 	tabela->tam = 0;
 }
 
-
+/* Função para recuperar registro do arquivo */
 Partida recuperar_registro (int rrn) {
 	Partida match;
 	char* seek;
@@ -703,6 +745,8 @@ Partida recuperar_registro (int rrn) {
 	return match;
 }
 
+
+/* Funçãao de hash */
 int hash (Chave chave, int tam) {
 	int i, sum = 0;
 	for (i = 0; i < 8; i += 1) {
@@ -711,25 +755,32 @@ int hash (Chave chave, int tam) {
 	return sum % tam;
 }
 
+/* Função que insere na tabela, usada pelo cadastro e pelo carregamento da tabela */
 void insere (Hashtable *tabela, Chave chave, int imprimeTabela) {
 	int hashPos, colisoes = 0;
 	int colisionPos;
 
+	// Calcula hash
 	hashPos = hash (chave, tabela->tam);
 
+	// Se a posição inicial achada está livre ou foi removida, insira na posição 'correta' do hash
 	if (tabela->v[hashPos].estado == LIVRE || tabela->v[hashPos].estado == REMOVIDO) {
 		tabela->v[hashPos] = chave;
+		// Se imprimeTabela estiver setado, imprime que o registro foi inserido com sucesso
 		if (imprimeTabela) {
 			printf (REGISTRO_INSERIDO, chave.pk, colisoes);	
 		}
 	} else {
+		// Se a chave já está na posição, então ela é repetida
 		if (strcmp (tabela->v[hashPos].pk, chave.pk) == 0) {
 			if (imprimeTabela) {
 				printf (ERRO_PK_REPETIDA, chave.pk);	
 			}
 		} else {
+			// Se já tiver uma chave lá, procurar a próxima posição linearmente
 			colisoes += 1;
 			colisionPos = (hashPos + colisoes) % tabela->tam;
+			// Quando achar a posição, insira e pare
 			while (colisionPos != hashPos) {
 				if (tabela->v[colisionPos].estado == LIVRE || tabela->v[colisionPos].estado == REMOVIDO) {
 					tabela->v[colisionPos] = chave;
@@ -738,10 +789,10 @@ void insere (Hashtable *tabela, Chave chave, int imprimeTabela) {
 					}
 					break;
 				}
-
 				colisoes += 1;
 				colisionPos = (hashPos + colisoes) % tabela->tam;
 			}
+			// Se rodou a tabela inteira, a tabela está cheia
 			if (colisionPos % tabela->tam == hashPos) {
 				if (imprimeTabela) {
 					printf (ERRO_TABELA_CHEIA);
