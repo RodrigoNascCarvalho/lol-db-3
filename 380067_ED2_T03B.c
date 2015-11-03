@@ -87,12 +87,16 @@ void carregar_arquivo();
 void exibir_registro(int rrn);
 
 /* <<< DECLARE AQUI OS PROTOTIPOS >>> */
+/* Função pra carregar tabela */
 void carregar_tabela(Hashtable *tabela);
 
+/* Função pra liberar tabela */
 void liberar_tabela (Hashtable *tabela);
 
+/* Função que verifica se num é primo na força bruta */
 int verifica_primo(int num);
 
+/* Função que procura o próximo primo a partir de num  */
 int prox_primo(int num);
 
 /* Exibe o jogador */
@@ -140,27 +144,38 @@ void alterar(Hashtable tabela);
 /* Busca um elemento */
 void buscar(Hashtable tabela);
 
+/* Função que busca na tabela e retorna rrn e posição do hash */
 int busca_tabela (Hashtable tabela, Chave element, int *pos);
 
+/* Função que imprime tabela */
 void imprimir_tabela (Hashtable tabela);
 
+/* Função de remover da tabela hash */
 void remover (Hashtable *tabela);
 
 /* Recupera um registro através do seu rrn */
 Partida recuperar_registro (int rrn);
 
+/* Função do hash */
 int hash (Chave chave, int tam);
 
+/* Função que insere na tabela a chave, e imprime a inserção opcionalmente */
 void insere (Hashtable *tabela, Chave chave, int imprimeTabela);
 
+/* Cria lista e adiciona elementos em ordem */
+/* Pego e adaptado da Lista 1 (380067_L01) */
 int addElementInOrder(Chave **list, Chave nodeValues);
 
+/* Cria nó da lista */
 void createNode(Chave ** tempNode, Chave nodeValues);
 
+/* Remove elemento da lista */
 int removeElement(Chave **list, Chave chave);
 
+/* Libera lista */
 void freeList(Chave **list);
 
+/* Imprime lista */
 void printList(Chave *list);
 
 /* ==========================================================================
@@ -266,19 +281,23 @@ void exibir_registro(int rrn) {
 int verifica_primo(int num) {
 	int i;
 
+	//Se é menor que 2, nem tente verificar, não é primo
 	if (num < 2) {
 		return FALSE;
 	} else {
+		// Procura se o número é divisivel por algum número menor que ele, se sim ele não é primo
 		for (i = 2; i < num; i += 1) {
 			if (num % i == 0) {
 				return FALSE;
 			}
 		}
+		// Senão é primo
 		return TRUE;
 	}
 }
 
 int prox_primo(int num) {
+	// Se num é primo, retorna num, senão incrementa num
 	while (TRUE) {
 		if (verifica_primo(num)) {
 			return num;
@@ -292,9 +311,12 @@ int prox_primo(int num) {
 void criar_tabela(Hashtable *tabela, int tam) {
 	int i;
 
+	// Define tamanho da tabela
 	tabela->tam = tam;
+	// Diferentemente do T03A, aloca-se um vetor de ponteiros de listas de chave
 	tabela->v = (Chave**) malloc(sizeof(Chave*) * tabela->tam);
 
+	// Inicializa todas as listas com null
 	for (i = 0; i < tam; i += 1) {
 		tabela->v[i] = NULL;
 	}
@@ -305,7 +327,7 @@ void carregar_tabela(Hashtable *tabela) {
 	Chave chave;
 	char *seek;
 	// Para todos os registros, escanear a chave primaria
-	// Calcular rrn e inserir na arvore
+	// Calcular rrn e inserir na tabela
 	while (TRUE) {
 		seek = ARQUIVO + (TAM_REGISTRO * i);
 
@@ -316,7 +338,7 @@ void carregar_tabela(Hashtable *tabela) {
 
 		chave.rrn = TAM_REGISTRO * i;
 
-
+		// FALSE pra não imprimir as inserções
 		insere (tabela, chave, FALSE);
 		i++;
 	}
@@ -335,7 +357,7 @@ void cadastrar(Hashtable *tabela){
 
 	rrn = busca_tabela (*tabela, chave, &pos);	
 
-	// Se não encontramos pagina, então podemos cadastrar um novo elemento, senão erro
+	// Se não encontramos rnn, então podemos cadastrar um novo elemento, senão erro
 	if (rrn != -1) {
 		printf (ERRO_PK_REPETIDA, match.pk);
 	} else {
@@ -356,7 +378,7 @@ void cadastrar(Hashtable *tabela){
 		// E copiamos o reg_match para a posição desejada
 		strncpy (seek, reg_match, TAM_REGISTRO);
 
-		// Inserimos no indice primario (Arvore B)
+		// Inserimos no indice primario (Tabela)
 		chave.rrn = (strlen(ARQUIVO)/TAM_REGISTRO * TAM_REGISTRO - TAM_REGISTRO);
 
 		insere (tabela, chave, TRUE);
@@ -566,13 +588,16 @@ void update (int rrn) {
 		match.duracao, match.vencedor, match.placar1,
 		match.placar2, match.mvp);
 
+	// Copiamos a nova duração
 	strcpy (match.duracao, matchDuration);
 
+	// Escrevemos num dummy
 	str_size = sprintf (dummy, "%s@%s@%s@%s@%s@%s@%s@%s@%s@", 
 		match.pk, match.equipe_azul, match.equipe_vermelha, match.data_partida,
 		match.duracao, match.vencedor, match.placar1,
 		match.placar2, match.mvp);
 
+	// Copia para o 'arquivo'
 	strncpy (seek, dummy, str_size);
 }
 
@@ -584,8 +609,10 @@ void alterar(Hashtable tabela) {
 	scanf("%[^\n]", search);
 	strcpy (element.pk, search);
 	
+	// Busca elemento
 	rrn = busca_tabela (tabela, element, &pos);	
 
+	// Se não achou erro, se achou update
 	if (rrn == -1) {
 		printf(REGISTRO_N_ENCONTRADO);
 	} else {
@@ -599,9 +626,12 @@ int busca_tabela(Hashtable tabela, Chave element, int *pos) {
 
 	if (tabela.tam == 0) return rrn;
 
-	hashPos = hash (element, tabela.tam); 
+	// Calcula hash
+	hashPos = hash (element, tabela.tam);
+	// Posição recebe hash porque não há colisão 
 	*pos = hashPos;
 
+	// Percorre lista e procura o rrn do elemento correto.
 	list = tabela.v[hashPos];
 
 	while (list != NULL) {
@@ -622,8 +652,10 @@ void buscar(Hashtable tabela) {
 	scanf ("%[^\n]", search);
 	strcpy (element.pk, search);
 	
+	//Busca na tabela
 	rrn = busca_tabela (tabela, element, &pos);
 
+	// Se achou exibir registro, senão erro
 	if (rrn == -1) {
 		printf(REGISTRO_N_ENCONTRADO);
 	} else {
@@ -641,9 +673,10 @@ void remover (Hashtable *tabela) {
 	getchar();
 	scanf ("%[^\n]", element.pk);
 
-
+	// Busca na tabela
 	rrn = busca_tabela (*tabela, element, &pos);
 
+	// Se elemento existe, então remover no arquivo colocando *| no ínicio de sua chave
 	if (rrn != -1) {
 		seek = ARQUIVO + rrn;
 
@@ -656,6 +689,7 @@ void remover (Hashtable *tabela) {
 
 		strncpy (seek, dummy, str_size);
 
+		// Remove elemento da lista
 		removeElement (&(*tabela).v[pos], element);
 	} else {
 		printf (REGISTRO_N_ENCONTRADO);
@@ -664,6 +698,7 @@ void remover (Hashtable *tabela) {
 
 void imprimir_tabela (Hashtable tabela) {
 	int i;
+	// Percorre lista e imprime no formato pedido
 	for (i = 0; i < tabela.tam; i++) {
 		printf ("[%d]", i);
 		printList (tabela.v[i]);
@@ -673,13 +708,15 @@ void imprimir_tabela (Hashtable tabela) {
 
 void liberar_tabela (Hashtable *tabela) {
 	int i;
+	// Libera memória de cada lista
 	for (i = 0; i < tabela->tam; i += 1) {
-		free (tabela->v[i]);
+		freeList (&(*tabela).v[i]);
 	}
+	// Seta tamanho para 0
 	tabela->tam = 0;
 }
 
-
+/* Função para recuperar registro */
 Partida recuperar_registro (int rrn) {
 	Partida match;
 	char* seek;
@@ -692,6 +729,7 @@ Partida recuperar_registro (int rrn) {
 	return match;
 }
 
+/* Função de hash */
 int hash (Chave chave, int tam) {
 	int i, sum = 0;
 	for (i = 0; i < 8; i += 1) {
@@ -700,11 +738,14 @@ int hash (Chave chave, int tam) {
 	return sum % tam;
 }
 
+// Função de inserção
 void insere (Hashtable *tabela, Chave chave, int imprimeTabela) {
 	int hashPos, inseriuSucesso;
 	hashPos = hash (chave, tabela->tam);
 
+	// Cria lista ou adiicona elemento em ordem a lista existente
 	inseriuSucesso = addElementInOrder (&(*tabela).v[hashPos], chave);
+	// Se insere com sucesso, print registro senão erro
 	if (inseriuSucesso) {
 		if (imprimeTabela) printf (REGISTRO_INSERIDO, chave.pk);	
 	} else {
@@ -718,17 +759,20 @@ int addElementInOrder(Chave **list, Chave nodeValues) {
 	Chave *copy = *list;
 	Chave *prev = NULL;
 
+	// Se lista vazia, cria nó, e seta lista com nó inicial
 	if (*list == NULL) {
 		createNode (list, nodeValues);
 		(*list)->prox = NULL;
 		return TRUE;
 	} else {
+		// Senão cria nó, verifica se o elemento devia ser o primeiro elemento da lista e trata
 		createNode (&tempNode, nodeValues);
 		if (strcmp (nodeValues.pk,(*list)->pk) < 0) {
 			tempNode->prox = (*list);
 			(*list) = tempNode;
 			return TRUE;
 		} else {
+			// Senão procura a posição em que o nó deve ser inserido e insere
 			while (copy != NULL && strcmp (nodeValues.pk, copy->pk) >= 0) {
 				prev = copy;
 				copy = copy->prox;
@@ -741,6 +785,7 @@ int addElementInOrder(Chave **list, Chave nodeValues) {
 	}
 }
 
+/* Função para criar nós. */
 void createNode(Chave ** tempNode, Chave nodeValues) {
 	Chave* copy;
 	copy = (Chave*) malloc(sizeof(Chave));
@@ -749,18 +794,23 @@ void createNode(Chave ** tempNode, Chave nodeValues) {
 	*tempNode = copy;
 }
 
+/* Função para remover elementos */
 int removeElement(Chave **list, Chave chave) {
 	Chave* copy = *list;
 	Chave* deletedItem;
 	Chave* prev = NULL; 
+	// Enquanto não acha a achave, procure proximo
 	while (copy != NULL && strcmp(chave.pk, copy->pk) >= 0) {
+		// Se achou a chave, faça uma copia, trata os casos se o elemento é o primeiro da lista
 		if (strcmp (copy->pk, chave.pk) == 0) {
 			deletedItem = copy;
 			if (prev == NULL) {
 				(*list) = deletedItem->prox;
+				//Senão remove normalmente
 			} else {
 				prev->prox = deletedItem->prox;
 			}
+			//Libera memoria
 			free(deletedItem);
 			deletedItem = NULL;
 			return TRUE;
@@ -771,17 +821,22 @@ int removeElement(Chave **list, Chave chave) {
 	return FALSE;
 }
 
+// Libera memória da lista
 void freeList(Chave **list) {
 	Chave* copy;
+	// Enquanto não for NULL, copia o nó e libera sua memoria
 	while((*list) != NULL) {
 		copy = *list;
 		(*list) = (*list)->prox;
 		free(copy);
 	}
+	// Seta ponteiro em null para garantir
 	*list = NULL;
 }
 
+// Percorre lista
 void printList(Chave *list) {
+	// Percorre lista printando elementos seguindo formato pedido
 	while (list != NULL) {
 		printf(" %s", list->pk);
 		list = list->prox;
