@@ -729,17 +729,13 @@ int addElementInOrder(Chave **list, Chave nodeValues) {
 			(*list) = tempNode;
 			return TRUE;
 		} else {
-			while (copy != NULL && strcmp (nodeValues.pk,(*list)->pk) >= 0) {
+			while (copy != NULL && strcmp (nodeValues.pk, copy->pk) >= 0) {
 				prev = copy;
 				copy = copy->prox;
 			}
-			if (strcmp (nodeValues.pk,(*list)->pk) == 0) {
-				return FALSE;
-			} else {
-				tempNode->prox = copy;
-				prev->prox = tempNode;
-				return TRUE;	
-			}
+			tempNode->prox = copy;
+			prev->prox = tempNode;
+			return TRUE;
 		}
 		return FALSE;
 	}
